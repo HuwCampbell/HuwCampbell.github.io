@@ -49,12 +49,10 @@ differently to Aphyr.
 
 module Main where
 
-import Data.Kind ( Type )
 import Data.Singletons
 import Data.Singletons.Prelude
 import Data.Singletons.Prelude.List
 import Data.Singletons.TypeLits
-import Data.Singletons.TH
 ```
 
 With that out of the way I can define a type level `safe` function
@@ -93,10 +91,11 @@ data Safe1 :: [Nat] -> (Nat ~> Bool)
 type instance Apply (Safe1 xs) x = Safe xs x
 ```
 
-The `(~>)` and the `Apply` type family comes from the `singletons`
-library for this purpose.  Next, we filter a candidate set of
-positions using the safe function, with the help of some additional
-type families from `Data.Singletons.Prelude.List`.
+The `(~>)` and the `Apply` type family come from the `singletons`
+library, and represent type level functions, and their application
+respectively.  Next, we filter a candidate set of positions using
+the safe function, with the help of some additional type families
+from `Data.Singletons.Prelude.List`.
 
 ```haskell
 type family Place (a :: [Nat]) (b :: k) :: [[Nat]] where
@@ -119,12 +118,12 @@ is even a `(@@)` operator to help us here. Again, we also need
 to define a function for the partially applied recursive term.
 
 ```haskell
-type family FoldM ( f :: TyFun b (TyFun a [b] -> Type) -> Type) ( acc :: b ) ( over :: [a] ) :: [b] where
+type family FoldM ( f :: b ~> a ~> [b] ) ( acc :: b ) ( over :: [a] ) :: [b] where
   FoldM f acc '[] = '[ acc ]
   FoldM f acc ( x ': xs) =
     ConcatMap (FoldM1 f xs) (f @@ acc @@ x )
 
-data FoldM1 :: (TyFun b (TyFun a [b] -> Type) -> Type) -> [a] -> (b ~> [b])
+data FoldM1 :: ( b ~> a ~> [b] ) -> [a] -> ( b ~> [b] )
 type instance Apply (FoldM1 f xs ) acc = FoldM f acc xs
 ```
 
@@ -166,6 +165,7 @@ library is written).
 For example, the `FoldM` type family above can be completely replaced
 with
 ```haskell
+import Data.Singletons.TH
 $(singletonsOnly [d|
   foldM :: (b -> a -> [b]) -> b -> [a] -> [b]
   foldM _ acc [] = [acc]
