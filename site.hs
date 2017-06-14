@@ -61,16 +61,12 @@ main = hakyll $ do
     match "templates/*" $ compile templateBodyCompiler
 
     -- http://jaspervdj.be/hakyll/tutorials/05-snapshots-feeds.html
-    let rss name render' =
-          create [name] $ do
-              route idRoute
-              compile $ do
-                  let feedCtx = postCtx `mappend` bodyField "description"
-                  posts <- fmap (take 10) . recentFirst =<< loadAllSnapshots "posts/*" "posts"
-                  render' feedConfiguration feedCtx posts
-
-    rss "atom.xml" renderAtom
-
+    create ["atom.xml"] $ do
+        route idRoute
+        compile $ do
+            let feedCtx = postCtx `mappend` bodyField "description"
+            posts <- fmap (take 10) . recentFirst =<< loadAllSnapshots "posts/*" "posts"
+            renderAtom feedConfiguration feedCtx posts
 
 --------------------------------------------------------------------------------
 postCtx :: Context String
