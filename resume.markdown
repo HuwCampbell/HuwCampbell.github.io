@@ -204,6 +204,10 @@ Computer Science Skills
 <ul>
 <li>Grenade</li>
 </div>
+<div class="four columns">
+<ul>
+<li>snappier</li>
+</div>
 </div>
 
 Interests

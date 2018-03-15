@@ -79,6 +79,6 @@ feedConfiguration = FeedConfiguration
    { feedTitle       = "Huw Campbell"
    , feedDescription = "Huw Campbell"
    , feedAuthorName  = "Huw Campbell"
-   , feedAuthorEmail = "huw@huw.com"
+   , feedAuthorEmail = "huw@huwcampbell.com"
    , feedRoot        = "http://huwcampbell.com"
    }
