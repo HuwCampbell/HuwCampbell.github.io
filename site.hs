@@ -1,13 +1,13 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-import           Data.Monoid (mappend)
+import           Data.Semigroup
 import           Hakyll
 
 
 --------------------------------------------------------------------------------
 main :: IO ()
 main = hakyll $ do
-    match "images/*" $ do
+    match ("images/*" .||. "js/*") $ do
         route   idRoute
         compile copyFileCompiler
 
@@ -26,7 +26,7 @@ main = hakyll $ do
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/post.html"    postCtx
             >>= saveSnapshot "posts"
-            >>= loadAndApplyTemplate "templates/default.html" postCtx
+            >>= loadAndApplyTemplate "templates/default.html" (mathCtx <> postCtx)
             >>= relativizeUrls
 
     create ["archive.html"] $ do
@@ -74,11 +74,21 @@ postCtx =
     dateField "date" "%B %e, %Y" `mappend`
     defaultContext
 
+mathCtx :: Context a
+mathCtx = field "katex" $ \item -> do
+    katex <- getMetadataField (itemIdentifier item) "katex"
+    return $ case katex of
+                Just "false" -> ""
+                Just "off" -> ""
+                _ -> "<link rel=\"stylesheet\" href=\"/css/katex.min.css\">\n\
+                     \<script type=\"text/javascript\" src=\"/js/katex.min.js\"></script>\n\
+                     \<script src=\"/js/auto-render.min.js\"></script>"
+
 feedConfiguration :: FeedConfiguration
 feedConfiguration = FeedConfiguration
    { feedTitle       = "Huw Campbell"
    , feedDescription = "Huw Campbell"
    , feedAuthorName  = "Huw Campbell"
    , feedAuthorEmail = "huw@huwcampbell.com"
-   , feedRoot        = "http://huwcampbell.com"
+   , feedRoot        = "https://huwcampbell.com"
    }
