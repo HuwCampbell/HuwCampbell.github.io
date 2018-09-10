@@ -60,7 +60,13 @@ Education
 Experience
 ----------
 
-**Machine Learning Researcher / Data Scientist**, Ambiata ( March 2014 – Present )
+**Principal Consultant**, Simple Machines ( September 2018 – Present )
+
+Simple Machines is a high end technology consulting firm, my role is
+to assist in bringing forth scalable and robust machine learning and
+data science for our clients.
+
+**Machine Learning Researcher / Data Scientist**, Ambiata ( March 2014 – August 2018 )
 
 Ambiata specialises in transforming massive scale data problems into
 tractable machine learning solutions. Beginning when then company was
