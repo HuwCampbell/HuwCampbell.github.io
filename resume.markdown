@@ -2,7 +2,7 @@
 title: Resume
 ---
 
-Dedicated machine learning expert, data scientist, haskell programmer,
+Dedicated software engineer, machine learning expert, data scientist,
 and physicist, looking to enjoy cutting edge research, development
 and analytics. Strong interpersonal and communication skills,
 combined with broad research experience and creative thinking,
@@ -65,6 +65,16 @@ Experience
 Simple Machines is a high end technology consulting firm, my role is
 to assist in bringing forth scalable and robust machine learning and
 data science for our clients.
+
+With Simple Machines I have worked across a wide variety of projects
+and disciplines, including:
+
+- building and putting into production streaming data streaming data
+  solutions robustly handling billions of messages per day.
+- full stack web development for large internal data services, using
+  ScalaJs with React, with a Scala Spark backend.
+- Kafka streaming and Snowflake database solutions for a banking client
+- Education and Training
 
 **Machine Learning Researcher / Data Scientist**, Ambiata ( March 2014 – August 2018 )
 
@@ -179,6 +189,24 @@ I also have experience in biology, chemistry, and mathematics.
 Computer Science Skills
 -----------------------
 
+<strong>Domains</strong>
+<div class="row">
+<div class="six columns" >
+<ul>
+<li>Functional Programming</li>
+<li>Software design and architecture</li>
+<li>Streaming data solutions</li>
+</ul>
+</div>
+<div class="six columns">
+<ul>
+<li>Big data solutions</li>
+<li>Compiler and DSL engineering</li>
+<li>Testing and correctness</li>
+</div>
+</div>
+
+
 <strong>Languages</strong>
 <div class="row">
 <div class="four columns" >
@@ -215,6 +243,7 @@ Computer Science Skills
 <li>snappier</li>
 </div>
 </div>
+
 
 Interests
 ---------
