@@ -69,11 +69,11 @@
 <pre><code>Missing: (-a | -b)</code></pre>
 <p>for example.</p>
 <p>With 0.13, the implementation of this feature became much nicer. Now, when the parser fails, the error data type is filled with the partially completed, existentially wrapped parser.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">data</span> <span class="dt">SomeParser</span> <span class="fu">=</span> forall a <span class="fu">.</span> <span class="dt">SomeParser</span> (<span class="dt">Parser</span> a)</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="kw">data</span> <span class="dt">ParseError</span></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4">  <span class="fu">=</span> <span class="dt">MissingError</span> <span class="fu">...</span> <span class="dt">SomeParser</span></a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">  <span class="fu">|</span> <span class="fu">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">data</span> <span class="dt">SomeParser</span> <span class="ot">=</span> <span class="kw">forall</span> a <span class="op">.</span> <span class="dt">SomeParser</span> (<span class="dt">Parser</span> a)</span>
+<span id="cb2-2"><a href="#cb2-2"></a></span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="kw">data</span> <span class="dt">ParseError</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a>  <span class="ot">=</span> <span class="dt">MissingError</span> <span class="op">...</span> <span class="dt">SomeParser</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a>  <span class="op">|</span> <span class="op">...</span></span></code></pre></div>
 <p>This <code>SomeParser</code> can be traversed, and the usage line printed for it printed (including only options with no default value).</p>
 <p>In addition to a few extra error message clean ups and additions, I believe that there are now no cases where the parser can fail and one won’t receive a useful error message. From a usability standpoint this is a big deal.</p>
 <h2 id="unix-style-grouping-of-short-options">Unix style grouping of short options</h2>
@@ -83,10 +83,10 @@
 <p>Fixing this was my first patch optparse. It works by popping off the rest of the flags from the command if the first is a flag and not an option. So when considering <code>-xcf</code>, if it notices that <code>-x</code> is a flag, it will parse it, then on the next step of the parse, examine <code>-cf</code>.</p>
 <h2 id="suggestions">Suggestions</h2>
 <p>This one hasn’t landed in <code>HEAD</code> yet, but was kind of fun. When I realised that I can use the same machinery we use for bash completion and the <em>missing:</em> error message generation it became quite easy to implement cleanly. When an option, flag, or subcommand can’t be parsed, or more specifically no match for it could be found, we include not only the unknown term, but also the existentially wrapped parser in the intermediate error data type.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">data</span> <span class="dt">ParseError</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2">  <span class="fu">=</span> <span class="dt">MissingError</span> <span class="fu">...</span> <span class="dt">SomeParser</span></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3">  <span class="fu">|</span> <span class="dt">UnexpectedError</span> <span class="dt">String</span> <span class="dt">SomeParser</span></a>
-<a class="sourceLine" id="cb4-4" data-line-number="4">  <span class="fu">|</span> <span class="fu">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">data</span> <span class="dt">ParseError</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a>  <span class="ot">=</span> <span class="dt">MissingError</span> <span class="op">...</span> <span class="dt">SomeParser</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a>  <span class="op">|</span> <span class="dt">UnexpectedError</span> <span class="dt">String</span> <span class="dt">SomeParser</span></span>
+<span id="cb4-4"><a href="#cb4-4"></a>  <span class="op">|</span> <span class="op">...</span></span></code></pre></div>
 <p>Then, we examine the <code>SomeParser</code>, but instead of including only mandatory options, we include only reachable options. A list of potential terms is generated, and they filtered based on the <a href="https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance">Damerau–Levenshtein</a> distance to the unrecognised option the user provided.</p>
 <p>The end result looks a lot like git’s command completion, and is quite nice I think</p>
 <pre><code>Invalid argument `installl'
