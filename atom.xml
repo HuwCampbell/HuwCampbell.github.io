@@ -8,8 +8,16 @@
         <name>Huw Campbell</name>
         <email>huw@huwcampbell.com</email>
     </author>
-    <updated>2020-03-24T00:00:00Z</updated>
+    <updated>2020-04-04T00:00:00Z</updated>
     <entry>
+    <title>Dumb Spark Tricks - Function Registration</title>
+    <link href="https://huwcampbell.com/posts/2020-04-04-dumb-spark-tricks-registering.html" />
+    <id>https://huwcampbell.com/posts/2020-04-04-dumb-spark-tricks-registering.html</id>
+    <published>2020-04-04T00:00:00Z</published>
+    <updated>2020-04-04T00:00:00Z</updated>
+    <summary type="html"><![CDATA[How to force Spark to register your non-UDF catalyst expressions]]></summary>
+</entry>
+<entry>
     <title>Dumb Spark Tricks - Partitioning</title>
     <link href="https://huwcampbell.com/posts/2020-03-24-dumb-spark-tricks.html" />
     <id>https://huwcampbell.com/posts/2020-03-24-dumb-spark-tricks.html</id>
