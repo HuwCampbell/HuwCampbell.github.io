@@ -3,6 +3,10 @@
     $if(author)$
         by $author$
     $endif$
+    $if(series)$
+    <br/>
+    <a href="$seriesUrl$">Part $seriesCurPos$ of a $seriesLength$-part series on $series$</a>
+    $endif$
 </div>
 
 $body$

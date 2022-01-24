@@ -1,12 +1,20 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
+import           Data.Char (toUpper)
 import           Data.Semigroup
 import           Hakyll
+import           Hakyll.Web.Series
 
 
 --------------------------------------------------------------------------------
+
+config :: Configuration
+config = defaultConfiguration {
+    destinationDirectory = "docs"
+  }
+
 main :: IO ()
-main = hakyll $ do
+main = hakyllWith config $ do
     match ("images/*" .||. "js/*") $ do
         route   idRoute
         compile copyFileCompiler
@@ -21,12 +29,28 @@ main = hakyll $ do
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= relativizeUrls
 
+    series <- buildSeries "posts/*" (fromCapture "series/*.html")
+
+    tagsRules series $ \(s:erie) pattern -> do
+        let title = toUpper s : erie
+        route idRoute
+        compile $ do
+            posts <- chronological =<< loadAll pattern
+            let ctx = constField "title" title `mappend`
+                    listField "posts" postCtx (pure posts) `mappend`
+                    defaultContext
+
+            makeItem ""
+                >>= loadAndApplyTemplate "templates/series.html" ctx
+                >>= loadAndApplyTemplate "templates/default.html" ctx
+                >>= relativizeUrls
+
     match "posts/*" $ do
         route $ setExtension "html"
         compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/post.html"    postCtx
+            >>= loadAndApplyTemplate "templates/post.html"    (seriesField series <> postCtx)
             >>= saveSnapshot "posts"
-            >>= loadAndApplyTemplate "templates/default.html" (mathCtx <> postCtx)
+            >>= loadAndApplyTemplate "templates/default.html" (seriesField series <> mathCtx <> postCtx)
             >>= relativizeUrls
 
     create ["archive.html"] $ do
