@@ -8,7 +8,7 @@ and analytics. Strong interpersonal and communication skills,
 combined with broad research experience and creative thinking,
 present a well rounded professional.
 
-Data science background
+Software Engineering and Data Science
 -----------------------
 
 Currently working for a machine learning and data science start-up
@@ -19,7 +19,7 @@ systems catering to millions of customers in varied business spaces.
 Some of my interests in this space are deep learning, infrastructure
 development, model optimisation, and creative experimental designs.
 
-Scientific research background
+Scientific Research
 ------------------------------
 
 My research encompassed looking at the ways one can use quantum
