@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+  <title>Huw Campbell - Grenade</title>
+  <meta name="description" content>
+  <meta name="author" content>
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/syntax.css">
+  <link rel="stylesheet" href="../css/custom.css">
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="images/favicon.png">
+
+  <!-- ATOM Feed
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="../atom.xml" type="application/atom+xml" rel="alternate" title="ATOM Feed" />
+
+</head>
+<body>
+
+  <!-- Primary Page Layout
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <div class="container">
+    <div class="three columns sidebar">
+        <nav>
+            <a href="../"><img class="titular" src="../images/pirate.jpg" alt="Huw Campbell"></a>
+            <h3 id="logo">Huw Campbell</h3>
+            <ul>
+                <li><a href="../">Home</a></li>
+                <li><a href="../about.html">About</a></li>
+                <li><a href="../archive.html">Posts</a></li>
+                <li><a href="../resume.html">Resume</a></li>
+                <li><a href="https://github.com/HuwCampbell">Github</a></li>
+            </ul>
+        </nav>
+        &nbsp;
+    </div>
+
+    <div class="nine columns content">
+        <h1>Grenade</h1>
+
+        <div class="info">
+    Posted on February 17, 2017
+    
+    
+</div>
+
+<p>I recently gave a talk at FP-Syd on my neural network library <a href="https://github.com/HuwCampbell/grenade">Grenade</a>. In some sense, I did this because on a previous evening there, after mentioning that I was writing one, was told that “everybody has a neural network library”. I felt that I should present what makes Grenade different from other ANN libraries out there.</p>
+<h1 id="introduction">Introduction</h1>
+<p>Grenade is a dependently typed, high level, artificial neural network library written in Haskell. It’s pretty robust, fast, and expressive, and uses some interesting type level programming techniques which don’t appear to have been used in neural networks before.</p>
+<p>I have found that its purely functional nature, and type level features, make development and composition of neural networks fast and easy, indeed, I was able to write my first <a href="https://arxiv.org/abs/1406.2661"><em>generative adversarial network</em></a> based on high level descriptions in a few hours, using no other libraries for reference.</p>
+<p>As a very simple example, I was able to write a convolutional neural network for the classic MNIST challenge in just a few lines of code with</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">MNIST</span> <span class="ot">=</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Network</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    '[ <span class="dt">Convolution</span> <span class="dv">1</span> <span class="dv">10</span> <span class="dv">5</span> <span class="dv">5</span> <span class="dv">1</span> <span class="dv">1</span>, <span class="dt">Pooling</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span>, <span class="dt">Relu</span>,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>       <span class="dt">Convolution</span> <span class="dv">10</span> <span class="dv">16</span> <span class="dv">5</span> <span class="dv">5</span> <span class="dv">1</span> <span class="dv">1</span>, <span class="dt">Pooling</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span>, <span class="dt">Relu</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>       <span class="dt">Flatten</span>, <span class="dt">FullyConnected</span> <span class="dv">256</span> <span class="dv">80</span>, <span class="dt">Logit</span>,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>       <span class="dt">FullyConnected</span> <span class="dv">80</span> <span class="dv">10</span>, <span class="dt">Logit</span> ]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    '[ <span class="dt">'D2</span> <span class="dv">28</span> <span class="dv">28</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>       <span class="dt">'D3</span> <span class="dv">24</span> <span class="dv">24</span> <span class="dv">10</span>, <span class="dt">'D3</span> <span class="dv">12</span> <span class="dv">12</span> <span class="dv">10</span>, <span class="dt">'D3</span> <span class="dv">12</span> <span class="dv">12</span> <span class="dv">10</span>,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>       <span class="dt">'D3</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">16</span>, <span class="dt">'D3</span> <span class="dv">4</span> <span class="dv">4</span> <span class="dv">16</span>, <span class="dt">'D3</span> <span class="dv">4</span> <span class="dv">4</span> <span class="dv">16</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>       <span class="dt">'D1</span> <span class="dv">256</span>, <span class="dt">'D1</span> <span class="dv">80</span>, <span class="dt">'D1</span> <span class="dv">80</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>       <span class="dt">'D1</span> <span class="dv">10</span>, <span class="dt">'D1</span> <span class="dv">10</span> ]</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="ot">randomMnist ::</span> <span class="dt">MonadRandom</span> m <span class="ot">=&gt;</span> m <span class="dt">MNIST</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>randomMnist <span class="ot">=</span> randomNetwork</span></code></pre></div>
+<p><code>MNIST</code> is a type alias for our neural network. This type contains not only a type level list of the layers of the network, but also type level list of the shapes of data which are passed between these layers.</p>
+<p>What’s really interesting here is that the function to construct this network with random weights is one function call to the function <code>randomNetwork</code>. That is, our types are so rich that no specific term level code is required to create this network.</p>
+<h1 id="background">Background</h1>
+<p>Deep learning is a big field. Today speech is understood and generated with LSTM networks, language is translated, images are classified, and videos captioned, and faces are recognised.</p>
+<p>The classic picture of a stack of fully connected neurons with a non-linear activation function does not cut it these days, and simple networks using this structure are actually probably better replaced with traditional machine learning techniques such as gradient boosted trees, SVMs, or even linear learners.</p>
+<p>Neural Networks today are composed of <strong>Layers</strong>, arranged into a directed graph. Usually, these are acyclic graphs, but recurrent networks may indeed involve cyclic components as well. It is the composition of these layers which give modern neural nets their expressiveness.</p>
+<p>The variety of layers is broad, and the Caffe libraries offers over 50 in its zoo.</p>
+<h2 id="how-are-they-trained">How are they trained?</h2>
+<p>Many layers have learnable parameters. Convolutional layers for instance learn kernel filters. They are trained by calculating the partial derivatives for the output loss function for every component to train using reverse automatic differentiation. An optimiser is used to assess how much to change the weights in the direction of the gradient, and make the network more likely to give the correct answer.</p>
+<p>Automatic differentiation is really cool, but relatively unknown, it’s</p>
+<ol type="a">
+<li>Not numeric differentiation</li>
+<li>Not symbolic differentiation</li>
+</ol>
+<p>It’s its own beast, and works by carrying along partial derivatives at each stage of a complex computation.</p>
+<p>A forward mode implementation is relatively trivial, and has been described <a href="http://conway.rutgers.edu/%7Eccshan/wiki/blog/posts/Differentiation/">elsewhere</a> but is simple enough to write here as well.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">AD</span> <span class="kw">where</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">D</span> s a <span class="ot">=</span> <span class="dt">D</span> a a <span class="kw">deriving</span> (<span class="dt">Eq</span> , <span class="dt">Show</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ot">lift ::</span> <span class="dt">Num</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">D</span> s a</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>lift x <span class="ot">=</span> <span class="dt">D</span> x <span class="dv">0</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ot">dependent ::</span> <span class="dt">Num</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">D</span> s a</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>dependent x <span class="ot">=</span> <span class="dt">D</span> x <span class="dv">1</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> <span class="dt">Ord</span> (<span class="dt">D</span> s a) <span class="kw">where</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">compare</span> (<span class="dt">D</span> x _) (<span class="dt">D</span> y _) <span class="ot">=</span> <span class="fu">compare</span> x y</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Num</span> a <span class="ot">=&gt;</span> <span class="dt">Num</span> (<span class="dt">D</span> s a) <span class="kw">where</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="dt">D</span> x x' <span class="op">+</span> <span class="dt">D</span> y y' <span class="ot">=</span> <span class="dt">D</span> (x <span class="op">+</span> y) (x' <span class="op">+</span> y')</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="dt">D</span> x x' <span class="op">*</span> <span class="dt">D</span> y y' <span class="ot">=</span> <span class="dt">D</span> (x <span class="op">*</span> y) (x' <span class="op">*</span> y <span class="op">+</span> x <span class="op">*</span> y')</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">negate</span> (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">negate</span> x) (<span class="fu">negate</span> x')</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abs</span>    (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">abs</span> x) (<span class="fu">signum</span> x <span class="op">*</span> x')</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">signum</span> (<span class="dt">D</span> x _)  <span class="ot">=</span> lift (<span class="fu">signum</span> x)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fromInteger</span> x   <span class="ot">=</span> lift (<span class="fu">fromInteger</span> x)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Floating</span> a <span class="ot">=&gt;</span> <span class="dt">Floating</span> (<span class="dt">D</span> s a) <span class="kw">where</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pi</span>              <span class="ot">=</span> <span class="dt">D</span> <span class="fu">pi</span> <span class="dv">0</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">exp</span>    (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">exp</span> x) (<span class="fu">exp</span> x <span class="op">*</span> x')</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">log</span>    (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">log</span> x) (x' <span class="op">/</span> x)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sin</span>    (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">sin</span> x) (<span class="fu">cos</span> x <span class="op">*</span> x')</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cos</span>    (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">cos</span> x) (<span class="op">-</span><span class="fu">sin</span> x <span class="op">*</span> x')</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">asin</span>   (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">asin</span> x) (x' <span class="op">/</span> <span class="fu">sqrt</span>( <span class="dv">1</span><span class="op">-</span> x<span class="op">^</span><span class="dv">2</span>))</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">acos</span>   (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">acos</span> x) (<span class="op">-</span>x' <span class="op">/</span> <span class="fu">sqrt</span>( <span class="dv">1</span><span class="op">-</span> x<span class="op">^</span><span class="dv">2</span>))</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">atan</span>   (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">atan</span> x) (x' <span class="op">/</span> (<span class="dv">1</span> <span class="op">+</span> x<span class="op">^</span><span class="dv">2</span>))</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sinh</span>   (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">sinh</span> x) (x' <span class="op">*</span> <span class="fu">cosh</span> x)</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cosh</span>   (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">cosh</span> x) (<span class="op">-</span><span class="fu">sinh</span> x <span class="op">*</span> x')</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">asinh</span>  (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">asinh</span> x) (x' <span class="op">/</span> <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="op">+</span> x<span class="op">^</span><span class="dv">2</span>))</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">acosh</span>  (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">acosh</span> x) (x' <span class="op">/</span> (<span class="fu">sqrt</span>(x <span class="op">-</span><span class="dv">1</span>) <span class="op">*</span> <span class="fu">sqrt</span>(x<span class="op">+</span><span class="dv">1</span>)))</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">atanh</span>  (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">atanh</span> x) (x' <span class="op">/</span> (<span class="dv">1</span> <span class="op">-</span> x<span class="op">^</span><span class="dv">2</span>))</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Fractional</span> a <span class="ot">=&gt;</span> <span class="dt">Fractional</span> (<span class="dt">D</span> s a) <span class="kw">where</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">recip</span> (<span class="dt">D</span> x x') <span class="ot">=</span> <span class="dt">D</span> (<span class="fu">recip</span> x) (<span class="op">-</span>x'<span class="op">/</span>x<span class="op">/</span>x)</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fromRational</span> x <span class="ot">=</span> lift (<span class="fu">fromRational</span> x)</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="co">-- Numerical differentiation (for tests)</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="ot">numerical ::</span> (<span class="dt">Fractional</span> a, <span class="dt">Num</span> a) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>numerical f x <span class="ot">=</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> bigger  <span class="ot">=</span> f (x <span class="op">+</span> <span class="fl">0.000005</span>)</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>      smaller <span class="ot">=</span> f (x <span class="op">-</span> <span class="fl">0.000005</span>)</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>  <span class="kw">in</span>  (bigger <span class="op">-</span> smaller) <span class="op">/</span> <span class="fl">0.00001</span></span></code></pre></div>
+<p>The main data type <code>D s a = D a a</code> carries its value in the first position and its gradient in the second position. The <code>s</code> type is a phantom type to ensure we can’t mix up gradients for different calculations, in a similar way to how <code>runST</code> has a phantom type to ensure refs can’t be mixed between mutable calculations.</p>
+<p>The idea is that we can create a variable with its derivative using <code>dependent</code>. This variable has a derivative of 1, since, if we change the value, the value will change by the same amount :). When we apply a function to this variable, its new derivative is calculated as well.</p>
+<p>What’s nice about this, is that we can calculate the partial derivative of any calculation in a single pass.</p>
+<h3 id="reverse-mode-ad">Reverse mode AD</h3>
+<p>Reverse mode is a little bit more complex to write in Haskell, but is also implement in the <em>ad</em> library.</p>
+<p>The idea is to keep a list (called the Wengert Tape) of values entering every step of the computaion, then, once the gradient we want to back propagate is calculated, we can work backwards through the calculation, calculating the new partial derivatives at every point.</p>
+<p>Again, what’s nice is that we can calculate the partial derivative for every weight and learnable parameter in the system using a single fowards and backwards pass. Whereas if we were to use numerical differentiation, we’d need to run two calculations for every partial derivative we wanted to calculate. As neural nets often have over a million learnable parameters (with some well over a billion), this is an obvious advantage.</p>
+<h2 id="what-makes-a-decent-neural-network-library">What makes a decent Neural Network library?</h2>
+<p>It must be fast. Some models can take days or more to train, so efficiency is important. In Haskell, this unfortunately means that the <em>ad</em> library can’t be used in anger, as it requires a <code>Functor</code> constraint, and can’t therefore use <em>BLAS</em> (there’s an issue to fix this).</p>
+<p>It must be compositional. Some of the bigger neural nets involve hundreds of layers organised into large complex graphs.</p>
+<h1 id="design-of-grenade">Design of Grenade</h1>
+<p>To understand Grenade’s design, it pays to first read <a href="https://github.com/mstksg">Justin Le’s</a>, blog on <a href="https://blog.jle.im/entry/practical-dependent-types-in-haskell-1.html">dependently typed fully connected networks</a>, provided many ideas for the type level ideas I needed. I would also note that some of the types given here may not be exactly what is in the library, as I’ve excluded a few constraints which don’t aid understanding.</p>
+<p>Grenade’s Neural networks pass multidimensional matricies between layers. These matricies, need not be of the same dimensionality, so we define a <code>Shape</code> type</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Shape</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">D1</span> <span class="dt">Nat</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">D2</span> <span class="dt">Nat</span> <span class="dt">Nat</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">D3</span> <span class="dt">Nat</span> <span class="dt">Nat</span> <span class="dt">Nat</span></span></code></pre></div>
+<p>We can make data of these shapes using GADTs and data kinds</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">S</span> (<span class="ot">n ::</span> <span class="dt">Shape</span>) <span class="kw">where</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">S1D</span><span class="ot"> ::</span> ( <span class="dt">KnownNat</span> o )</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>      <span class="ot">=&gt;</span> <span class="dt">R</span> o</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>      <span class="ot">-&gt;</span> <span class="dt">S</span> (<span class="dt">'D1</span> o)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">S2D</span><span class="ot"> ::</span> ( <span class="dt">KnownNat</span> rows, <span class="dt">KnownNat</span> columns )</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>      <span class="ot">=&gt;</span> <span class="dt">L</span> rows columns</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>      <span class="ot">-&gt;</span> <span class="dt">S</span> (<span class="dt">'D2</span> rows columns)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">S3D</span><span class="ot"> ::</span> ( <span class="dt">KnownNat</span> rows</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>         , <span class="dt">KnownNat</span> columns</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>         , <span class="dt">KnownNat</span> depth)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>      <span class="ot">=&gt;</span> <span class="dt">L</span> (rows <span class="op">*</span> depth) columns</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>      <span class="ot">-&gt;</span> <span class="dt">S</span> (<span class="dt">'D3</span> rows columns depth)</span></code></pre></div>
+<p>I have also written some singletons instances for these shapes, which helps implement a good few functions, such as <code>fromIntegral</code>. This helps up march up and down between terms, types and kinds and work at the type level.</p>
+<p>I couldn’t actually find any other examples of writing singletons without template haskell before, so I’ll print them here as an example of what this looks like.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="kw">instance</span> <span class="dt">Sing</span> (<span class="ot">n ::</span> <span class="dt">Shape</span>) <span class="kw">where</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">D1Sing</span><span class="ot"> ::</span> <span class="dt">KnownNat</span> a <span class="ot">=&gt;</span> <span class="dt">Sing</span> (<span class="dt">'D1</span> a)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">D2Sing</span><span class="ot"> ::</span> (<span class="dt">KnownNat</span> a, <span class="dt">KnownNat</span> b) <span class="ot">=&gt;</span> <span class="dt">Sing</span> (<span class="dt">'D2</span> a b)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">D3Sing</span><span class="ot"> ::</span> (<span class="dt">KnownNat</span> a, <span class="dt">KnownNat</span> b, <span class="dt">KnownNat</span> c) <span class="ot">=&gt;</span> <span class="dt">Sing</span> (<span class="dt">'D3</span> a b c)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">KnownNat</span> a <span class="ot">=&gt;</span> <span class="dt">SingI</span> (<span class="dt">'D1</span> a) <span class="kw">where</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  sing <span class="ot">=</span> <span class="dt">D1Sing</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> (<span class="dt">KnownNat</span> a, <span class="dt">KnownNat</span> b)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=&gt;</span> <span class="dt">SingI</span> (<span class="dt">'D2</span> a b) <span class="kw">where</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    sing <span class="ot">=</span> <span class="dt">D2Sing</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> (<span class="dt">KnownNat</span> a, <span class="dt">KnownNat</span> b, <span class="dt">KnownNat</span> c)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=&gt;</span> <span class="dt">SingI</span> (<span class="dt">'D3</span> a b c) <span class="kw">where</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    sing <span class="ot">=</span> <span class="dt">D3Sing</span></span></code></pre></div>
+<p>Next we define what a layer is in Grenade, there’s actually two associated classes.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">UpdateLayer</span> x <span class="kw">where</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="dt">Gradient</span><span class="ot"> x ::</span> <span class="op">*</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  runUpdate       ::</span> <span class="dt">LearningPamameters</span> <span class="ot">-&gt;</span> x <span class="ot">-&gt;</span> <span class="dt">Gradient</span> x <span class="ot">-&gt;</span> x</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ot">  createRandom    ::</span> <span class="dt">MonadRandom</span> m <span class="ot">=&gt;</span> m x</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">UpdateLayer</span> x <span class="ot">=&gt;</span> <span class="dt">Layer</span> x (<span class="ot">i ::</span> <span class="dt">Shape</span>) (<span class="ot">o ::</span> <span class="dt">Shape</span>) <span class="kw">where</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- | The Wengert tape for this layer.</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="dt">Tape</span> x i<span class="ot"> o ::</span> <span class="op">*</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- | Take the input from the previous</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="co">--   layer, and give the output from this layer.</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="ot">  runForwards    ::</span> x <span class="ot">-&gt;</span> <span class="dt">S</span> i <span class="ot">-&gt;</span> (<span class="dt">Tape</span> x i o, <span class="dt">S</span> o)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- | Back propagate a step, computing the gradients</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="ot">  runBackwards   ::</span> x <span class="ot">-&gt;</span> <span class="dt">Tape</span> x i o <span class="ot">-&gt;</span> <span class="dt">S</span> o</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>                 <span class="ot">-&gt;</span> (<span class="dt">Gradient</span> x, <span class="dt">S</span> i)</span></code></pre></div>
+<p>The first class <code>UpdateLayer</code> defines what data structure we can use to pass around the <code>Gradient</code> for this layer, as well as how we can perform a step of stochastic gradient decent.</p>
+<p>The second class <code>Layer</code> is used to define what shapes of data a layer can transform between. There’s no limit on how many instances of <code>Layer</code> a single type can take, as there might be shapes on which a layer can work.</p>
+<p>The <code>Tape</code> type describes what data is needed to be able to calculate the partial derivatives leading into the layer (and the layer’s gradients) given the partial derivatives of its output.</p>
+<p>The reason for the two classes is simply that we don’t want to have to provide <code>Proxys</code> for the input and output shapes when they aren’t required, nor duplicate the <code>runUpdate</code> function and friends when there is more than one set of shapes which can be transformed.</p>
+<h2 id="example-layers">Example Layers</h2>
+<p>As an example, here’ the definition of the <code>Tanh</code> layer. This is a relatively simple layer, which simply applies the non-linear hyperbolic tangent function to activation coming into the layer.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">UpdateLayer</span> <span class="dt">Tanh</span> <span class="kw">where</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="dt">Gradient</span> <span class="dt">Tanh</span> <span class="ot">=</span> ()</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  runUpdate _ <span class="dt">Tanh</span> () <span class="ot">=</span> <span class="dt">Tanh</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  createRandom <span class="ot">=</span> <span class="fu">return</span> <span class="dt">Tanh</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> (a <span class="op">~</span> b, <span class="dt">SingI</span> a) <span class="ot">=&gt;</span> <span class="dt">Layer</span> <span class="dt">Tanh</span> a b <span class="kw">where</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="dt">Tape</span> <span class="dt">Tanh</span> a b <span class="ot">=</span> <span class="dt">S</span> a</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  runForwards _ a <span class="ot">=</span> (a, <span class="fu">tanh</span> a)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  runBackwards _ a g <span class="ot">=</span> ((), tanh' a <span class="op">*</span> g)</span></code></pre></div>
+<p>One can see that <code>type Gradient Tanh = ()</code> which means that there are no learnable parameters, for this layer.</p>
+<p>The single <code>Layer</code> instance, states that the layer can perform the transformation of any input and output shapes, as long as they are equal, be they 1, 2, or 3 dimensional.</p>
+<p>A layer with slightly more interesting <code>Layer</code> instances is the <code>Reshape</code> layer. One of these is</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  (<span class="dt">KnownNat</span> a, <span class="dt">KnownNat</span> x, <span class="dt">KnownNat</span> y, a <span class="op">~</span> (x <span class="op">*</span> y))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=&gt;</span> <span class="dt">Layer</span> <span class="dt">Reshape</span> (<span class="dt">'D2</span> x y) (<span class="dt">'D1</span> a) <span class="kw">where</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<p>which says that we can flatten a 2 dimensional image into a single vector, but only if the total number of points is equal. This is one of many instances of the <code>Reshape</code> layer.</p>
+<p>Finally an example of a <code>Layer</code> with learnable parameters is the <code>FullyConnected</code> layer.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> (<span class="dt">KnownNat</span> i, <span class="dt">KnownNat</span> o)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=&gt;</span> <span class="dt">UpdateLayer</span> (<span class="dt">FullyConnected</span> i o) <span class="kw">where</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="dt">Gradient</span> (<span class="dt">FullyConnected</span> i o) <span class="ot">=</span> <span class="dt">FullyConnected'</span> i o</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> (<span class="dt">KnownNat</span> i, <span class="dt">KnownNat</span> o)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=&gt;</span> <span class="dt">Layer</span> (<span class="dt">FullyConnected</span> i o) (<span class="dt">'D1</span> i) (<span class="dt">'D1</span> o) <span class="kw">where</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="dt">Tape</span> (<span class="dt">FullyConnected</span> i o) (<span class="dt">'D1</span> i) (<span class="dt">'D1</span> o) <span class="ot">=</span> <span class="dt">S</span> (<span class="dt">'D1</span> i)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<p>where the <code>FullyConnected'</code> type holds the weight matrix for the bias and activation neurons.</p>
+<h2 id="network">Network</h2>
+<p>With these building blocks, the definition of a <code>Network</code> is simple</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Network</span><span class="ot"> ::</span> [<span class="op">*</span>] <span class="ot">-&gt;</span> [<span class="dt">Shape</span>] <span class="ot">-&gt;</span> <span class="op">*</span> <span class="kw">where</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">NNil</span><span class="ot">  ::</span> <span class="dt">SingI</span> i <span class="ot">=&gt;</span> <span class="dt">Network</span> '[] '[i]</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="ot">    (:~&gt;) ::</span> (<span class="dt">SingI</span> i, <span class="dt">SingI</span> h, <span class="dt">Layer</span> x i h)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>          <span class="ot">=&gt;</span> <span class="op">!</span>x <span class="ot">-&gt;</span> <span class="op">!</span>(<span class="dt">Network</span> xs (h '<span class="op">:</span> hs))</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>          <span class="ot">-&gt;</span> <span class="dt">Network</span> (x '<span class="op">:</span> xs) (i '<span class="op">:</span> h '<span class="op">:</span> hs)</span></code></pre></div>
+<p>As well as some very similar heterogeneous like data types for <code>Gradients</code> and <code>Tapes</code>, which are parameterised by the layers and shapes in a similar way to the Network.</p>
+<p>Three functions then provide all we really need to do machine learning</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- | Running a network forwards with some input data.</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">--</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">--   This gives the output, and the Wengert tape required for back</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">--   propagation.</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">--</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="ot">runNetwork ::</span> <span class="kw">forall</span> layers shapes<span class="op">.</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>              <span class="dt">Network</span> layers shapes</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>           <span class="ot">-&gt;</span> <span class="dt">S</span> (<span class="dt">Head</span> shapes)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>           <span class="ot">-&gt;</span> (<span class="dt">Tapes</span> layers shapes, <span class="dt">S</span> (<span class="dt">Last</span> shapes))</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="co">-- | Running a loss gradient back through the network.</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="co">--</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="co">--   This requires a Wengert tape, generated with the appropriate input</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="co">--   for the loss.</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="co">--</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="co">--   Gives the gradients for the layer, and the gradient across the</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="co">--   input (which may not be required).</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="co">--</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="ot">runGradient ::</span> <span class="kw">forall</span> layers shapes<span class="op">.</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>               <span class="dt">Network</span> layers shapes</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>            <span class="ot">-&gt;</span> <span class="dt">Tapes</span> layers shapes</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>            <span class="ot">-&gt;</span> <span class="dt">S</span> (<span class="dt">Last</span> shapes)</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>            <span class="ot">-&gt;</span> (<span class="dt">Gradients</span> layers, <span class="dt">S</span> (<span class="dt">Head</span> shapes))</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a><span class="co">-- | Apply one step of stochastic gradient decent across the network.</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="ot">applyUpdate ::</span> <span class="dt">LearningParameters</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>            <span class="ot">-&gt;</span> <span class="dt">Network</span> layers shapes</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>            <span class="ot">-&gt;</span> <span class="dt">Gradients</span> layers</span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>            <span class="ot">-&gt;</span> <span class="dt">Network</span> layers shapes</span></code></pre></div>
+<p>what’s really nice about these functions is that they directly mirror the functions in Layers, in fact, this match works so well that we can embed a Network as a Layer in another Network</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">UpdateLayer</span> (<span class="dt">Network</span> sublayers subshapes) <span class="kw">where</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="dt">Gradient</span> (<span class="dt">Network</span> sublayers subshapes) <span class="ot">=</span> <span class="dt">Gradients</span> sublayers</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  runUpdate    <span class="ot">=</span> applyUpdate</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  createRandom <span class="ot">=</span> randomNetwork</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> ( i <span class="op">~</span> (<span class="dt">Head</span> subshapes)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>         , o <span class="op">~</span> (<span class="dt">Last</span> subshapes)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>         ) <span class="ot">=&gt;</span> <span class="dt">Layer</span> (<span class="dt">Network</span> sublayers subshapes) i o <span class="kw">where</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="dt">Tape</span> (<span class="dt">Network</span> sublayers subshapes) i o <span class="ot">=</span> <span class="dt">Tapes</span> sublayers subshapes</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  runForwards  <span class="ot">=</span> runNetwork</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  runBackwards <span class="ot">=</span> runGradient</span></code></pre></div>
+<p>Combined with a <code>Concat</code> layer, which runs two layers in parallel and concatenates their output, we can now recreate directed acyclic graphs of layers in Grenade in a composable manner.</p>
+<p>As an example, we can train two parallel convolutional Networks for MNIST using different kernel sizes, and combine their output before running the fully connected layers.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">MNIST5x5</span> <span class="ot">=</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Network</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    '[ <span class="dt">Convolution</span> <span class="dv">1</span> <span class="dv">10</span> <span class="dv">5</span> <span class="dv">5</span> <span class="dv">1</span> <span class="dv">1</span>, <span class="dt">Pooling</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span>, <span class="dt">Relu</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>     , <span class="dt">Convolution</span> <span class="dv">10</span> <span class="dv">16</span> <span class="dv">5</span> <span class="dv">5</span> <span class="dv">1</span> <span class="dv">1</span>, <span class="dt">Pooling</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span>, <span class="dt">Relu</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>     , <span class="dt">FlattenLayer</span> ]</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    '[ <span class="dt">'D2</span> <span class="dv">28</span> <span class="dv">28</span>, <span class="dt">'D3</span> <span class="dv">24</span> <span class="dv">24</span> <span class="dv">10</span>, <span class="dt">'D3</span> <span class="dv">12</span> <span class="dv">12</span> <span class="dv">10</span>, <span class="dt">'D3</span> <span class="dv">12</span> <span class="dv">12</span> <span class="dv">10</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>     , <span class="dt">'D3</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">16</span>, <span class="dt">'D3</span> <span class="dv">4</span> <span class="dv">4</span> <span class="dv">16</span>, <span class="dt">'D3</span> <span class="dv">4</span> <span class="dv">4</span> <span class="dv">16</span>, <span class="dt">'D1</span> <span class="dv">256</span> ]</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">MNIST7x7</span> <span class="ot">=</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Network</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    '[ <span class="dt">Convolution</span> <span class="dv">1</span> <span class="dv">10</span> <span class="dv">7</span> <span class="dv">7</span> <span class="dv">1</span> <span class="dv">1</span>, <span class="dt">Pooling</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span>, <span class="dt">Relu</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>     , <span class="dt">Convolution</span> <span class="dv">10</span> <span class="dv">16</span> <span class="dv">4</span> <span class="dv">4</span> <span class="dv">1</span> <span class="dv">1</span>, <span class="dt">Pooling</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span> <span class="dv">2</span>, <span class="dt">Relu</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>     , <span class="dt">FlattenLayer</span> ]</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    '[ <span class="dt">'D2</span> <span class="dv">28</span> <span class="dv">28</span>, <span class="dt">'D3</span> <span class="dv">22</span> <span class="dv">22</span> <span class="dv">10</span>, <span class="dt">'D3</span> <span class="dv">11</span> <span class="dv">11</span> <span class="dv">10</span>, <span class="dt">'D3</span> <span class="dv">11</span> <span class="dv">11</span> <span class="dv">10</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>     , <span class="dt">'D3</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">16</span>, <span class="dt">'D3</span> <span class="dv">4</span> <span class="dv">4</span> <span class="dv">16</span>, <span class="dt">'D3</span> <span class="dv">4</span> <span class="dv">4</span> <span class="dv">16</span>, <span class="dt">'D1</span> <span class="dv">256</span> ]</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">MNIST</span>  <span class="ot">=</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Network</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    '[ <span class="dt">Concat</span> (<span class="dt">'D1</span> <span class="dv">256</span>) <span class="dt">MNIST5x5</span> (<span class="dt">'D1</span> <span class="dv">256</span>) <span class="dt">MNIST7x7</span>, <span class="dt">FlattenLayer</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>     , <span class="dt">FullyConnected</span> <span class="dv">512</span> <span class="dv">80</span>, <span class="dt">Logit</span>, <span class="dt">FullyConnected</span> <span class="dv">80</span> <span class="dv">10</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>     , <span class="dt">Logit</span> ]</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    '[ <span class="dt">'D2</span> <span class="dv">28</span> <span class="dv">28</span>, <span class="dt">'D2</span> <span class="dv">2</span> <span class="dv">256</span>, <span class="dt">'D1</span> <span class="dv">512</span>, <span class="dt">'D1</span> <span class="dv">80</span>, <span class="dt">'D1</span> <span class="dv">80</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>     , <span class="dt">'D1</span> <span class="dv">10</span>, <span class="dt">'D1</span> <span class="dv">10</span> ]</span></code></pre></div>
+<p>We can also write an Inception network, which can be embedded into a Network as a Layer easily.</p>
+<h2 id="conclusions">Conclusions</h2>
+<p>Grenade does a lot of things right, it’s very expressive in my view, and makes the construction of networks incredibly safe: they essentially can’t crash, and they’ll always be sound. It’s also pretty quick, using BLAS and some hand written C, I’ve found this acceptable for a lot of problems.</p>
+<p>The biggest downside is related to speed however, Grenade is CPU only, and at this stage, does not use minibatching. I don’t think this is a big deal for a lot of architectures, but for some (LSTM) it does come at a cost.</p>
+<p>The next big downside is related to optimisation algorithms. At the moment, I just use stochastic gradient decent with momentum, and this is baked into the structure of each layer a bit too much. It’s totally reasonable to ask for a neural network library to permit the ADAM optimiser, or something else.</p>
+<p>There are actually haskell versions of a lot of these algorithms already, but they require a <code>Functor</code> constraint on the types, which I don’t think I can do while maintaining the performance characteristics of the library.</p>
+<p>I think there is a decent solution, where the <code>Gradient</code> type becomes the weights for a <code>Layer</code>, with a dictionary providing just enough operations on it for the optimiser to be able to decide what extra information it wants to hold onto (frequency of updates, last update… etc).</p>
+
+    </div>
+  </div>
+
+<!-- End Document
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+</body>
+</html>

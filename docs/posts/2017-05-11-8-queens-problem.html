@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+  <title>Huw Campbell - 8 Queens Problem</title>
+  <meta name="description" content>
+  <meta name="author" content>
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/syntax.css">
+  <link rel="stylesheet" href="../css/custom.css">
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="images/favicon.png">
+
+  <!-- ATOM Feed
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="../atom.xml" type="application/atom+xml" rel="alternate" title="ATOM Feed" />
+
+</head>
+<body>
+
+  <!-- Primary Page Layout
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <div class="container">
+    <div class="three columns sidebar">
+        <nav>
+            <a href="../"><img class="titular" src="../images/pirate.jpg" alt="Huw Campbell"></a>
+            <h3 id="logo">Huw Campbell</h3>
+            <ul>
+                <li><a href="../">Home</a></li>
+                <li><a href="../about.html">About</a></li>
+                <li><a href="../archive.html">Posts</a></li>
+                <li><a href="../resume.html">Resume</a></li>
+                <li><a href="https://github.com/HuwCampbell">Github</a></li>
+            </ul>
+        </nav>
+        &nbsp;
+    </div>
+
+    <div class="nine columns content">
+        <h1>8 Queens Problem</h1>
+
+        <div class="info">
+    Posted on May 11, 2017
+    
+    
+</div>
+
+<p>I heard of this problem recently, based on Aphyr’s eccentrically written <a href="https://aphyr.com/posts/342-typing-the-technical-interview">typing the technical interview</a> blog post. It’s an interesting read, but sadly, I am not a witch, so I found the functional dependency style used quite difficult to understand. I therefore thought I would spend a few minutes bashing out a simple solution at the term level, then attempt to port it to the type level using more modern Haskell techniques with the <code>singletons</code> library and type families.</p>
+<p>The question, which is apparently common in interviews, is to discover ways of placing 8 queens on a chessboard without any of them being able to attack one another.</p>
+<p>Here’s my take at the term level version: my solution is a monadic fold using list’s monad instance, where the accumulator is keeping track of the Queens’ positions in each row we have placed already.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Monad</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ot">solution ::</span> [[<span class="dt">Int</span>]]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>solution <span class="ot">=</span> foldM place [] [<span class="dv">1</span><span class="op">..</span><span class="dv">8</span>]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ot">place ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> [[<span class="dt">Int</span>]]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>place current _ <span class="ot">=</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  (<span class="op">:</span> current) <span class="op">&lt;$&gt;</span> <span class="fu">filter</span> (safe current) [<span class="dv">1</span><span class="op">..</span><span class="dv">8</span>]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ot">safe ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>safe xs x <span class="ot">=</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">and</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    [ <span class="fu">all</span> (<span class="op">/=</span> x) xs</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    , <span class="fu">all</span> (<span class="op">/=</span> x) (<span class="fu">zipWith</span> (<span class="op">+</span>) xs [<span class="dv">1</span><span class="op">..</span>])</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    , <span class="fu">all</span> (<span class="op">/=</span> x) (<span class="fu">zipWith</span> (<span class="op">-</span>) xs [<span class="dv">1</span><span class="op">..</span>])</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    ]</span></code></pre></div>
+<p>It’s a simple solution. For the type level, I’ll be doing it quite differently to Aphyr.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE TypeOperators, DataKinds, PolyKinds, TypeFamilies, KindSignatures,</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ot">             TemplateHaskell, GADTs, UndecidableInstances, RankNTypes,</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ot">             ScopedTypeVariables, FlexibleContexts, TypeInType #-}</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Singletons</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Singletons.Prelude</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Singletons.Prelude.List</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Singletons.TypeLits</span></span></code></pre></div>
+<p>With that out of the way I can define a type level <code>safe</code> function which returns all the safe locations which a queen can go in a row, given the positions of queens in the previous rows.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">family</span> <span class="dt">Safe</span> (<span class="ot">b ::</span> [<span class="dt">Nat</span>]) (<span class="ot">a ::</span> <span class="dt">Nat</span>)<span class="ot"> ::</span> <span class="dt">Bool</span> <span class="kw">where</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Safe</span> xs x <span class="ot">=</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">And</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>      '[ <span class="dt">All</span> ((<span class="op">:/=$$</span>) x) xs</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>       , <span class="dt">All</span> ((<span class="op">:/=$$</span>) x)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>         ( <span class="dt">ZipWith</span> (<span class="op">:+$</span>) xs                   (<span class="dt">EnumFromTo</span> <span class="dv">1</span> <span class="dv">8</span>) )</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>       , <span class="dt">All</span> ((<span class="op">:/=$$</span>) ( <span class="dv">10</span> <span class="op">:+</span> x ))</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>         ( <span class="dt">ZipWith</span> (<span class="op">:-$</span>) (<span class="dt">Map</span> ((<span class="op">:+$$</span>) <span class="dv">10</span>) xs) (<span class="dt">EnumFromTo</span> <span class="dv">1</span> <span class="dv">8</span>) ) ]</span></code></pre></div>
+<p>I was tripped up a few times writing this function. The first thing was just trying to find the right version of the equality functions to call. The <code>$$</code> ending specifies the right number of partial applications to apply, but it’s a real pain to discover due to the template haskell generated haddocks of the <code>singletons</code> library being terrible. The next thing was the natural number subtraction. My type families were getting stuck without the <code>+10</code> when a negative number would have been produced, but it was quite hard to see what the problem really was.</p>
+<p>Below I define my partial application for <code>Safe</code>. Unfortunately, just like Aphyr I still need to do this as Haskell type application can’t be partially applied. But using data kinds and type in type makes this a lot safer here, with a proper type signature keeping everything in place.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Safe1</span><span class="ot"> ::</span> [<span class="dt">Nat</span>] <span class="ot">-&gt;</span> (<span class="dt">Nat</span> <span class="op">~&gt;</span> <span class="dt">Bool</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Apply</span> (<span class="dt">Safe1</span> xs) x <span class="ot">=</span> <span class="dt">Safe</span> xs x</span></code></pre></div>
+<p>The <code>(~&gt;)</code> and the <code>Apply</code> type family come from the <code>singletons</code> library, and represent type level functions, and their application respectively. Next, we filter a candidate set of positions using the safe function, with the help of some additional type families from <code>Data.Singletons.Prelude.List</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">family</span> <span class="dt">Place</span> (<span class="ot">a ::</span> [<span class="dt">Nat</span>]) (<span class="ot">b ::</span> k)<span class="ot"> ::</span> [[<span class="dt">Nat</span>]] <span class="kw">where</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Place</span> xs ignore <span class="ot">=</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Map</span> (<span class="dt">FlipCons1</span> xs) (<span class="dt">Filter</span> (<span class="dt">Safe1</span> xs) (<span class="dt">EnumFromTo</span> <span class="dv">1</span> <span class="dv">8</span>))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">FlipCons1</span><span class="ot"> ::</span> [<span class="dt">Nat</span>] <span class="ot">-&gt;</span> (<span class="dt">Nat</span> <span class="op">~&gt;</span> [<span class="dt">Nat</span>])</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Apply</span> (<span class="dt">FlipCons1</span> xs) x <span class="ot">=</span> x '<span class="op">:</span> xs</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Place1</span><span class="ot"> ::</span> [<span class="dt">Nat</span>] <span class="ot">-&gt;</span> (ignore <span class="op">~&gt;</span> [[<span class="dt">Nat</span>]])</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Apply</span> (<span class="dt">Place1</span> xs) b <span class="ot">=</span> <span class="dt">Place</span> xs b</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Place2</span><span class="ot"> ::</span> ([<span class="dt">Nat</span>] <span class="op">~&gt;</span> ignore <span class="op">~&gt;</span> [[<span class="dt">Nat</span>]])</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Apply</span> (<span class="dt">Place2</span>) xs <span class="ot">=</span> <span class="dt">Place1</span> xs</span></code></pre></div>
+<p>To write the FoldM we need to perform type application using the <code>Apply</code> instances. This is actually pretty easy, and there is even a <code>(@@)</code> operator to help us here. Again, we also need to define a function for the partially applied recursive term.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">family</span> <span class="dt">FoldM</span> (<span class="ot"> f ::</span> b <span class="op">~&gt;</span> a <span class="op">~&gt;</span> [b] ) (<span class="ot"> acc ::</span> b ) (<span class="ot"> over ::</span> [a] )<span class="ot"> ::</span> [b] <span class="kw">where</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">FoldM</span> f acc '[] <span class="ot">=</span> '[ acc ]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">FoldM</span> f acc ( x '<span class="op">:</span> xs) <span class="ot">=</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">ConcatMap</span> (<span class="dt">FoldM1</span> f xs) (f <span class="op">@@</span> acc <span class="op">@@</span> x )</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">FoldM1</span><span class="ot"> ::</span> ( b <span class="op">~&gt;</span> a <span class="op">~&gt;</span> [b] ) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> ( b <span class="op">~&gt;</span> [b] )</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Apply</span> (<span class="dt">FoldM1</span> f xs ) acc <span class="ot">=</span> <span class="dt">FoldM</span> f acc xs</span></code></pre></div>
+<p>Next up is the solution. It’s written almost identically to the term level code above, with a fold over placements.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">family</span> <span class="dt">Solutions</span><span class="ot"> ::</span> [[<span class="dt">Nat</span>]] <span class="kw">where</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Solutions</span> <span class="ot">=</span> <span class="dt">FoldM</span> <span class="dt">Place2</span> '[] (<span class="dt">EnumFromTo</span> <span class="dv">1</span> <span class="dv">8</span>)</span></code></pre></div>
+<p>It appears to work too</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="op">*</span><span class="dt">Main</span><span class="op">&gt;</span> <span class="op">:</span>t <span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Solutions</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Solutions</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  ::</span> <span class="dt">Proxy</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>       ('[<span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">7</span>, <span class="dv">3</span>, <span class="dv">6</span>, <span class="dv">8</span>, <span class="dv">5</span>, <span class="dv">1</span>]</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">:$$$</span> <span class="ch">'['</span>[<span class="dv">5</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">7</span>, <span class="dv">3</span>, <span class="dv">8</span>, <span class="dv">6</span>, <span class="dv">1</span>], '[<span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">2</span>, <span class="dv">8</span>, <span class="dv">6</span>, <span class="dv">4</span>, <span class="dv">7</span>, <span class="dv">1</span>],</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span></code></pre></div>
+<h2 id="conclusions">Conclusions</h2>
+<p>Modern Haskell’s type level code is actually pretty succinct, and even has a good degree of type safety. Using less code, we are pretty easily able to get all the solutions (instead of one in the cited blog post), and my type errors when writing it actually existed, which was a plus.</p>
+<h2 id="bonus---as-template-haskell">Bonus - as Template Haskell</h2>
+<p>Interestingly, a lot of what was written above can be generated for us by the <code>singletons</code> library (indeed, this is how the <code>singletons</code> library is written).</p>
+<p>For example, the <code>FoldM</code> type family above can be completely replaced with</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Singletons.TH</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="op">$</span>(singletonsOnly [d|</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  foldM :: (b -&gt; a -&gt; [b]) -&gt; b -&gt; [a] -&gt; [b]</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  foldM _ acc [] = [acc]</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  foldM f acc (x : xs) =</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    concatMap (\acc' -&gt; foldM f acc' xs) (f acc x)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  |])</span></code></pre></div>
+<p>and the library will even generate for us the partially applied terms.</p>
+<p>One can actually get very close to the result with just the code from my term level calculation in a <code>singletonsOnly</code> splice. It is however a bit finicky, and often complains about functions not existing when there is a type family for them, so it’s a bit all or nothing. Plus, one loses a lot of readability in their error messages and the haddocks will be phenomenally bad.</p>
+
+    </div>
+  </div>
+
+<!-- End Document
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+</body>
+</html>

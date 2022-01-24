@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+  <title>Huw Campbell - Optimised Row Columnar for Haskell</title>
+  <meta name="description" content>
+  <meta name="author" content>
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/syntax.css">
+  <link rel="stylesheet" href="../css/custom.css">
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="images/favicon.png">
+
+  <!-- ATOM Feed
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="../atom.xml" type="application/atom+xml" rel="alternate" title="ATOM Feed" />
+
+</head>
+<body>
+
+  <!-- Primary Page Layout
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <div class="container">
+    <div class="three columns sidebar">
+        <nav>
+            <a href="../"><img class="titular" src="../images/pirate.jpg" alt="Huw Campbell"></a>
+            <h3 id="logo">Huw Campbell</h3>
+            <ul>
+                <li><a href="../">Home</a></li>
+                <li><a href="../about.html">About</a></li>
+                <li><a href="../archive.html">Posts</a></li>
+                <li><a href="../resume.html">Resume</a></li>
+                <li><a href="https://github.com/HuwCampbell">Github</a></li>
+            </ul>
+        </nav>
+        &nbsp;
+    </div>
+
+    <div class="nine columns content">
+        <h1>Optimised Row Columnar for Haskell</h1>
+
+        <div class="info">
+    Posted on September 18, 2020
+    
+    
+</div>
+
+<p>I are proud to announce a new <a href="https://github.com/HuwCampbell/orc-haskell">Apache ORC</a> library for Haskell which I am releasing as open source under the Affero General Public License. This project was written as a component for the <a href="https://icicle-lang.github.io">Icicle</a> query language; and this announcement is cross posted there.</p>
+<p>Orc-Haskell supports all column types and encodings as well as snappy, zlib, and zstd compression formats.</p>
+<p>We’ve used hedgehog’s round-trip testing to ensure consistency between reading and writing, golden tests against the specification, and integration tests with the C++ implementation using the examples from the ORC repository.</p>
+<h4 id="optimised-row-columnar">Optimised Row Columnar</h4>
+<p>Apache ORC is an extremely useful file format, it’s Hadoop native, usable with Hive, Spark, Presto, and Athena; and offers great compression and locality. Unfortunately though, it is complex, and until now reading and writing ORC files in Haskell has not been practical.</p>
+<p>This library is implemented completely independently to the C++ and Java versions, and is based almost entirely on the <a href="https://orc.apache.org/specification/ORCv1/">specification</a>. This approach has allowed us to be a lot more succinct and idiomatic than a direct port would have been, and uncovered a small raft of mistakes and omissions from the specification which we will be reporting to the ORC maintainers.</p>
+<h4 id="api">API</h4>
+<p>As Icicle itself uses a column representation in its calling convention to C, we had to make a big deviation to how we parse data compared to the C++ and Java versions. The main difference is that our parser returns a columnar representation of each stripe directly, and thus reads the whole stripe into memory. The mainline versions return a record based reader, and seek through the file more in order to keep memory usage lower. Our approach has enabled use to use a layered API and allows for a much more streamlined code base, but does mean that RAM use is a higher than it would be had we used a different approach.</p>
+<p>Most users won’t want to deal with stripes directly though, and should import <code>Orc.Logical</code> with the functions</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- | Open an ORC file and stream its values values as logical rows.</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>withOrcFile</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  ::</span> <span class="dt">FilePath</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- ^ The ORC file to open</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> (<span class="dt">Type</span> <span class="ot">-&gt;</span> (<span class="dt">Stream</span> (<span class="dt">Of</span> <span class="dt">Row</span>) <span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">IO</span> r)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- ^ How to consume the stream of values as a continuation</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">IO</span> r</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co">-- | Write a stream of values as an ORC file.</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>putOrcFile</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="ot">  ::</span> <span class="dt">Type</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- ^ The type of the rows</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">CompressionKind</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- ^ An optional compression standard to use</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- ^ The number of rows in each stripe</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">FilePath</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- ^ The filepath to write to</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">Stream</span> (<span class="dt">Of</span> <span class="dt">Row</span>) <span class="dt">IO</span> ()</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- ^ The stream of rows to write</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span></code></pre></div>
+<p>Where <code>Stream</code> is from the <a href="http://hackage.haskell.org/package/streaming">streaming</a> library and <code>Row</code> is an algebraic data type representing a single row of an ORC file.</p>
+<p>The layering mentioned is that these functions are themselves implemented using the <code>Orc.Striped.withOrcFileLifted</code> and <code>Orc.Striped.putOrcFileLifted</code> functions, which allow direct access to the striped representation.</p>
+<h4 id="benchmarks">Benchmarks</h4>
+<p>We use microbenchmarking for key functions, and have used optimised C code where performance is critical. The library is a lot newer than the C++ and Java versions though, and is in general a bit slower at parsing files.</p>
+<p>Reading a 200 megabyte compressed file with 4 million rows and 20 columns takes roughly double to time to parse into a striped representation as the C++ version takes to read it at; pivoting to a logical stream brings it to a factor of 3 times slower.</p>
+<p>Writing is very fast, adding only 12s when roundtripping the file through a striped representation.</p>
+<center>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th>C++</th>
+<th>Striped</th>
+<th>Logical</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Read only</td>
+<td>18s</td>
+<td>35s</td>
+<td>50s</td>
+</tr>
+<tr class="even">
+<td>Roundtrip</td>
+<td></td>
+<td>47s</td>
+<td>1m 52s</td>
+</tr>
+</tbody>
+</table>
+</center>
+<h4 id="have-fun">Have Fun</h4>
+<p>Hopefully you find this library useful. ORC is a great format to use during ETL and for long term storage, as its type system is powerful enough to encode a lot of invariants, and its compatibility with tools like Spark and Presto make it quite flexible.</p>
+<p>If you would like to include this library in a proprietary product, please reach out to me to discuss licensing beyond the AGPL-3.</p>
+
+    </div>
+  </div>
+
+<!-- End Document
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+</body>
+</html>

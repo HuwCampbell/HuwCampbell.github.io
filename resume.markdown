@@ -69,10 +69,16 @@ data science for our clients.
 With Simple Machines I have worked across a wide variety of projects
 and disciplines, including:
 
-- building and putting into production streaming data streaming data
-  solutions robustly handling billions of messages per day.
-- full stack web development for large internal data services, using
-  ScalaJs with React, with a Scala Spark backend.
+- Anaml Feature Engineering Platform.<br>
+  I am the principal engineer for a feature engineering and analytics tool,
+  designed to help businesses collaborate more productively when performing
+  analytics or machine learning tasks. With a custom version control system
+  and governance workflow, and high performance Spark backend.
+- Big data streaming productionisation in Kafka and Spark.<br>
+  Reworked and advised a new Kafka architectures which would better
+  facilitate propagating cell tower data at rates higher than 200 gigabytes
+  per hour. Consumed and processed this data with a custom, high capacity
+  Spark streaming application.
 - Kafka streaming and Snowflake database solutions for a banking client
 - Education and Training
 
@@ -212,18 +218,18 @@ Computer Science Skills
 <div class="four columns" >
 <ul>
 <li>Haskell</li>
-<li>R</li>
+<li>Scala</li>
 </ul>
 </div>
 <div class="four columns">
 <ul>
-<li>Scala</li>
-<li>C#</li>
+<li>Nix</li>
+<li>C</li>
 </div>
 <div class="four columns">
 <ul>
+<li>R</li>
 <li>Idris</li>
-<li>C</li>
 </div>
 </div>
 

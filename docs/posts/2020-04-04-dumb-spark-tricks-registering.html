@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+  <title>Huw Campbell - Dumb Spark Tricks - Function Registration</title>
+  <meta name="description" content>
+  <meta name="author" content>
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/syntax.css">
+  <link rel="stylesheet" href="../css/custom.css">
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="images/favicon.png">
+
+  <!-- ATOM Feed
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="../atom.xml" type="application/atom+xml" rel="alternate" title="ATOM Feed" />
+
+</head>
+<body>
+
+  <!-- Primary Page Layout
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <div class="container">
+    <div class="three columns sidebar">
+        <nav>
+            <a href="../"><img class="titular" src="../images/pirate.jpg" alt="Huw Campbell"></a>
+            <h3 id="logo">Huw Campbell</h3>
+            <ul>
+                <li><a href="../">Home</a></li>
+                <li><a href="../about.html">About</a></li>
+                <li><a href="../archive.html">Posts</a></li>
+                <li><a href="../resume.html">Resume</a></li>
+                <li><a href="https://github.com/HuwCampbell">Github</a></li>
+            </ul>
+        </nav>
+        &nbsp;
+    </div>
+
+    <div class="nine columns content">
+        <h1>Dumb Spark Tricks - Function Registration</h1>
+
+        <div class="info">
+    Posted on April  4, 2020
+    
+    
+</div>
+
+<p>I’ve been working with Spark for a few years now, and have pushed it into realms where it was not really meant to go. Over this time, I have written a lot of custom aggregators, catalyst expressions, custom RDDs and streaming interfaces.</p>
+<p>This is the second part of this series, and is a short one.</p>
+<h4 id="how-to-trick-spark-into-registering-a-custom-catalyst-or-imperative-expression">How to trick Spark into registering a custom Catalyst or Imperative Expression</h4>
+<p>Spark provides quite a rich set of interfaces for writing custom functions and aggregates to its runtime.</p>
+<p>Unfortunately, most of these interfaces are considered relatively internal, and relatively complicated; so the Spark developers have exposed an interface for user defined functions.</p>
+<p>User Defined Functions, or UDF, and their relatives User Defined Aggregate Function have reasonable support in Scala, Python, and R; and for a good few many jobs, work ok.</p>
+<p>The biggest issue with these however, is that they automatically marshall to the host language using reflection techniques, and their semantics with regards to polymorphic expressions is either non-existant, or drastically broken. They also are limited in even the monomorphic types they can work with, and types like maps and structures just don’t seem to work.</p>
+<p>Luckily though, when working in Scala, one can use the interfaces Spark uses itself to write add required functionality.</p>
+<p>There are a good range of these, including <code>TypedImperativeAggregate</code>, and <code>DeclarativeAggregate</code>, and the plain old <code>Expression</code>.</p>
+<p>Here, we’re going to quickly defined a polymorphic identity function, which is a <code>UnaryExpression</code>, these are a simple extension of <code>Expression</code> with just one child in the Spark DAG.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> <span class="kw">class</span> <span class="fu">Ident</span><span class="op">(</span>child<span class="op">:</span> <span class="bu">Seq</span><span class="op">[</span><span class="ex">Expression</span><span class="op">])</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">extends</span> UnaryExpression <span class="kw">with</span> CodegenFallback <span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">override</span> <span class="kw">def</span> prettyName<span class="op">:</span> <span class="ex">String</span> <span class="op">=</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;ident&quot;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">override</span> <span class="kw">def</span> dataType<span class="op">:</span> DataType <span class="op">=</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    child<span class="op">.</span>dataType</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">override</span> <span class="kw">def</span> <span class="fu">eval</span><span class="op">(</span>input<span class="op">:</span> InternalRow<span class="op">):</span> <span class="ex">Any</span> <span class="op">=</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    child eval input</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>The <code>CodeGenFallback</code> here says that we trust Spark to build efficient enough Scala code when doing a full stage compilation, and we’re not going to write a custom Scala pretty printer for this expression.</p>
+<p>To use this function in Scala code, it’s quite simple. We just need to provide a function which operates as a <code>Column</code> by wrapping and unwrapping the internal expression. I tend to just use the apply method of a companion object</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">object</span> Ident <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> <span class="fu">apply</span><span class="op">(</span>child<span class="op">:</span> Column<span class="op">):</span> Column <span class="op">=</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> <span class="fu">Column</span><span class="op">(</span>child<span class="op">.</span>expr<span class="op">)</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>We can now just use this function in a Spark <code>select</code> for instance, or anywhere else a <code>Column</code> is required.</p>
+<p>However, if we want to provide this so we can use it in a parsed SQL text expression, we’re put in a very difficult place. The Spark developers have provided a way to register functions defined as UDFs and native Scala functions to be surfaced, but not functions written the way normal Spark definitions are defined!</p>
+<p>Here’s what we’ve been given for unary function like what we’d like to define:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> UDFRegistration <span class="kw">extends</span> Logging <span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> register<span class="op">[</span>RT<span class="op">:</span> TypeTag<span class="op">,</span> A1<span class="op">:</span> TypeTag<span class="op">](</span>name<span class="op">:</span> <span class="ex">String</span><span class="op">,</span> func<span class="op">:</span> <span class="op">(</span>A1<span class="op">)</span> ⇒ RT<span class="op">):</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    UserDefinedFunction</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> <span class="fu">register</span><span class="op">(</span>name<span class="op">:</span> <span class="ex">String</span><span class="op">,</span> udf<span class="op">:</span> UserDefinedFunction<span class="op">):</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    UserDefinedFunction</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>The first of these allows us to use a standard Scala function as a spark expression, but requires that its type is monomorphic and able to be reflected upon (behind the scenes, Spark will perform an implicit cast so that the types line up).</p>
+<p>The second is relatively uninteresting, as a <code>UserDefinedFunction</code> is created by the function <code>udf</code> which uses the same reflection techniques as the first <code>register</code>.</p>
+<p>What we can do though, is utterly abuse this second function, and Scala’s class inheritance. The interesting this about the <code>register</code> function, is that the only function which <code>register</code> calls is the UDF’s <code>apply</code> method, and it is extremely similar to the one we wrote above. So what we can do, is extend the <code>UserDefinedFunction</code> class and override its apply method.</p>
+<p>We need some dummy parameters for the case class, but don’t worry, they’re never going to be used.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">object</span> Ident <span class="kw">extends</span> <span class="fu">UserDefinedFunction</span><span class="op">(</span>identity<span class="op">[</span>Nothing<span class="op">]</span> _<span class="op">,</span> <span class="ex">NullType</span><span class="op">,</span> <span class="bu">None</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// What we had before to make our Scala code nicer</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> <span class="fu">apply</span><span class="op">(</span>child<span class="op">:</span> Column<span class="op">):</span> Column <span class="op">=</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> <span class="fu">Column</span><span class="op">(</span>child<span class="op">.</span>expr<span class="op">)</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">// How we overrides the UDF's apply method, allowing</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// it to be used in imported SQL literals and expressions.</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">override</span> <span class="kw">def</span> <span class="fu">apply</span><span class="op">(</span>exprs<span class="op">:</span> Column<span class="op">*):</span> Column <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    exprs<span class="op">.</span>toList <span class="cf">match</span> <span class="op">{</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>      <span class="cf">case</span> child <span class="op">::</span> Nil <span class="op">=&gt;</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">Ident</span><span class="op">(</span>child<span class="op">)</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>      <span class="cf">case</span> _ <span class="op">=&gt;</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">throw</span> <span class="kw">new</span> <span class="ex">Exception</span><span class="op">(</span><span class="st">&quot;Ident takes one argument&quot;</span><span class="op">)</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>And that’s about it, we can now register this custom catalyst expression, even though the Spark developers didn’t really seem to think we would want to.</p>
+<p>I’ve been using this trick a fair bit recently, as writing UDFs is extremely limiting when any form of polymorphism is required.</p>
+
+    </div>
+  </div>
+
+<!-- End Document
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+  <title>Huw Campbell - Announcing optparse-applicative 0.14.0</title>
+  <meta name="description" content>
+  <meta name="author" content>
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/syntax.css">
+  <link rel="stylesheet" href="../css/custom.css">
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="images/favicon.png">
+
+  <!-- ATOM Feed
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="../atom.xml" type="application/atom+xml" rel="alternate" title="ATOM Feed" />
+
+</head>
+<body>
+
+  <!-- Primary Page Layout
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <div class="container">
+    <div class="three columns sidebar">
+        <nav>
+            <a href="../"><img class="titular" src="../images/pirate.jpg" alt="Huw Campbell"></a>
+            <h3 id="logo">Huw Campbell</h3>
+            <ul>
+                <li><a href="../">Home</a></li>
+                <li><a href="../about.html">About</a></li>
+                <li><a href="../archive.html">Posts</a></li>
+                <li><a href="../resume.html">Resume</a></li>
+                <li><a href="https://github.com/HuwCampbell">Github</a></li>
+            </ul>
+        </nav>
+        &nbsp;
+    </div>
+
+    <div class="nine columns content">
+        <h1>Announcing optparse-applicative 0.14.0</h1>
+
+        <div class="info">
+    Posted on June  9, 2017
+    
+    
+</div>
+
+<p>I’m very pleased to announce the next major version of <a href="https://github.com/pcapriotti/optparse-applicative">optparse-applicative</a>. I was meaning to release this last month, but I had a baby last month instead, which has taken up quite a bit of my time. Still, it’s been a pleasure to put this release together, and I hope people enjoy the results. In this post, I’ll mention a few of the new features and fixes.</p>
+<p><a href="https://hackage.haskell.org/package/optparse-applicative-0.14.0.0"><img src="https://img.shields.io/badge/hackage-v0.14.0.0-orange.svg" alt="Hackage page (downloads and API reference)" /></a></p>
+<h2 id="bash-zsh-and-fish-completions">Bash, Zsh, and Fish Completions</h2>
+<p>If you’re not yet using the completions scripts for optparse it’s well worth giving it a try now. I’ve fixed quite a lot of bugs, and added a few things which almost completely negate the need for writing custom shell scripts for completions for optparse programs at all.</p>
+<p>The first few bugs related to how bash compgen actions were called, and these bugs got pretty ugly at times. For example, if one tried to complete a term which was partially quoted, such as</p>
+<pre><code>&gt; example 'Documents/&lt;tab&gt;</code></pre>
+<p>then a particularly awful error message regarding syntax errors would be emitted to stderr by the called bash process as it tried to find the close to the quotion.</p>
+<p>The solution was to dequote any quoted or partially quoted string, then hard quote it again before passing it to the <code>compgen</code> builtin in bash. This also had the added benefit of fixing one of my personal annoyances for our completion system – premature expansion of <code>~</code> in a path completion: where</p>
+<pre><code>~/Doc&lt;tab&gt;</code></pre>
+<p>would become</p>
+<pre><code>/home/huw/Documents</code></pre>
+<p>This is now fixed, and the <code>~</code> does not get rewritten on the command line by a bash completion.</p>
+<p>Beyond bash though, we now support much richer completions for zsh and fish shells. What’s particularly nice is that these completions also now can include the help descriptions for the items being completed.</p>
+<p>Here is an example screenshot when using fish shell using only the uncustomised optparse generated completion script</p>
+<p><img src="../images/fish-completions.png" alt="Fish Completion" class="u-full-width" style="border-radius: 4px; border: 1px solid #E1E1E1;" /></p>
+<p>A similar level of detail is available with zsh completions as well.</p>
+<h2 id="error-messages">Error Messages</h2>
+<p>One of my focuses for this release was to ensure that optparse gives a great error message for <em>every</em> type of failure we emit (this has actually been a focus of mine for some time); and there was one which was oddly handled by default.</p>
+<p>Since 0.5 <code>option</code> has had a builder, <code>noArgError</code> which one can use to specify the error message shown to a user if they do not provide an argument for the respective option. We have used this for the provided <code>helper</code> parser for instance such that it always shows the help text. The default for this was a conspicuously unhelpful though, being <code>ErrorMsg ""</code>. Now instead of not receiving an error message, one should see</p>
+<pre><code>The option `--bash-completion-script` expects an argument.</code></pre>
+<p>for example. This did require a change to the internal types to store the name of the option, but I managed to keep the builder api the same, so one can still use the old builder to change the error message if they desire.</p>
+<p>Combined with other error message improvements mentioned in <a href="../posts/2017-02-28-maintaining-optparse-applicative.html">my previous post</a> I don’t think one will ever receive an unhelpful or absent error message from an <code>optparse-applicative</code> parser going forwards, which I think is a great improvement.</p>
+<h2 id="suggestions">Suggestions</h2>
+<p>When an option, flag, or subcommand can’t be parsed, or no match for it could be found, we now can emit some suggestions of terms which the user may have meant. This is based off the edit distance between the entered argument and the possible items the parser knows about. Details regarding the implementation, are available in <a href="../posts/2017-02-28-maintaining-optparse-applicative.html">my last post</a></p>
+<p>The end result looks a lot like git’s command completion, and is quite nice I think</p>
+<pre><code>Invalid argument `installl'
+
+Did you mean this?
+    install</code></pre>
+<pre><code>Invalid option `-x'
+
+Did you mean one of these?
+    -v
+    -h</code></pre>
+<h2 id="no-interperse-and-forward-options">No Interperse and Forward Options</h2>
+<p>Optparse has had a no intersperse option builder for a good while (since 0.7), but its description and behaviour didn’t actually match. When a parser was called with <code>noInterperse</code> applied, it would behave the same as if the user had typed <code>--</code> at the start of the command: that is, no options would be parsed. In other parsing libraries with no intersperse options on (and old unix command line guidelines), one has to place all options before any arguments. Once a single positional argument is parsed, all remaining options are treated as positional as well. We now behave in the same way.</p>
+<p>Fixing this issue inspired me to also alleviate a pain point which my colleagues and I had been having regarding mixing arguments and wrapping commands. At Ambiata, we created a build tool called <a href="https://github.com/ambiata/mafia">mafia</a> which acts as an opinionated wrapper around <code>cabal</code>, providing a <code>nix</code> like package cache, safe sandboxing, and submodule handling amongst other things.</p>
+<p>When using it though, to pass an option to <code>cabal</code> underneath, the user would need to first use <code>--</code> to tell optparse to treat all remaining options as arguments, and the argument list would be sent to <code>cabal</code>. Now, with the <code>forwardOptions</code> builder attached when creating the <code>parserInfo</code> structures, any unrecognised options to <code>mafia</code> can be passed through as is. I believe this will actually help in quite a few places where people are using mixed environments (such as a <a href="https://github.com/pcapriotti/optparse-applicative/pull/259">C</a> command line parser).</p>
+<h2 id="polymorphic-string">Polymorphic String</h2>
+<p>Text and Bytestring are pervasive in the Haskell ecosystem, so it was annoying that <code>optparse-applicative</code> didn’t support them trivially out of the box.</p>
+<p>The builders we have provided for some time are</p>
+<pre><code>str :: ReadM String
+auto :: Read a =&gt; ReadM a</code></pre>
+<p>which I have found quite funny, in that <code>auto</code> is good for simple types apart from string like ones (which require quoting when used with <code>read</code>) while <code>str</code> requires an <code>fmap pack</code> to make it work with <code>Text</code>. From 0.14 onwards these will be</p>
+<pre><code>str :: IsString a =&gt; ReadM a
+auto :: Read a =&gt; ReadM a</code></pre>
+<p>which means that the <code>str</code> reader will be able to deal with <code>String</code>, <code>Text</code>, and <code>ByteString</code>, as well as their lazy equivalents without requiring the user to jump through any hoops. Other builders and helpers such as <code>strOption</code> and <code>strArgument</code> have also been updated to be polymorphic over <code>IsString</code> in the same manner. This is a mildly breaking change, but I think it’s worthwhile.</p>
+<p>If one has been using <code>str</code> for the purposes of type inference (as we were in the <code>optparse-applicative</code> test suite) then type signatures may now be required, or the use of <code>readerAsk</code>, which is still fixed to a single type. As there’s not a lot of purpose in requesting a value and not using it, I don’t think many users will see any update issues from this change at all.</p>
+<h2 id="explicit-module-exports">Explicit Module Exports</h2>
+<p>The final big thing I have done before release is to remove the module reëxports from the <code>Options.Applicative</code> module and explicitly export a public API.</p>
+<p>This should make things more robust going forwards, and let people know exactly what is a supported and useful part of the API, instead of having them have to infer if something is actually internal to the library.</p>
+<p>In doing this I have actually removed a few function exports which were internal or deprecated, and added the <code>ParserHelp</code> type (which is useful) to the main module exports.</p>
+<p>Again, this is a minorly breaking change, it is however quite unlikely that it will cause issues for most users, and indeed, it should make it easier to maintain a rock solid API going forwards.</p>
+<h2 id="thanks">Thanks</h2>
+<p>Thanks to Paolo Capriotti for trusting me to maintain his library, and to those who have submitted patches and bug reports and given advice. Herbert Valerio Riedel was especially helpful with keeping things compatible across past and (with any luck) future versions of GHC.</p>
+
+    </div>
+  </div>
+
+<!-- End Document
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+</body>
+</html>

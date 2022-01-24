@@ -1,0 +1,6 @@
+packages: .
+
+source-repository-package
+    type: git
+    location: https://github.com/oisdk/hakyll-series.git
+    tag: abf54b49db5fbc06471af38e2aa7b30c392a52b3
