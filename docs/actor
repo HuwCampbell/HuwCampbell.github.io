@@ -1,0 +1,17 @@
+{
+	"@context": [
+		"https://www.w3.org/ns/activitystreams",
+		"https://w3id.org/security/v1"
+	],
+
+	"id": "https://www.huwcampbell.com/actor",
+	"type": "Person",
+	"preferredUsername": "Huw",
+	"inbox": "https://www.huwcampbell.com/inbox",
+
+	"publicKey": {
+		"id": "https://www.huwcampbell.com/actor#main-key",
+		"owner": "https://huwcampbell.com/actor",
+		"publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzqNGbyqCG7zsbKPEpFUD\nXkN48d5GfVF35FCxZZOEmNJkw+rbmRTaain40O6aq7RaXv8f/j6/rS4I9MDilNNa\nSr+AQq1jXO92QinFHf0RWlrP+Ufv0ECtKlCCdAtThNH5Xc5N0l5qdJlXh1aQIYzd\noSVZLZwkhJqDQxFVw2k42H0qPJOrCLe8QTuxQ0bbeG3xUCp6VFJrQmX0fNsEAcfJ\n9yJgFq2IXHtJvmXEc7rr3Nck3rhZlntlURca9KuIddloECPoc9PRrP9Lz0VTt52/\nvIVGTmmAn4krj2UuKO7gqKzaC+2Y1CHE8AqoLII9eqKXyu8QIehYJXcod695mQgI\nxwIDAQAB\n-----END PUBLIC KEY-----"
+	}
+}

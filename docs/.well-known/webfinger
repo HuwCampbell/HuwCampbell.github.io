@@ -1,0 +1,11 @@
+{
+	"subject": "acct:huw@www.huwcampbell.com",
+
+	"links": [
+		{
+			"rel": "self",
+			"type": "application/activity+json",
+			"href": "https://www.huwcampbell.com/actor"
+		}
+	]
+}
