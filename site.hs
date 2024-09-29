@@ -15,6 +15,10 @@ config = defaultConfiguration {
 
 main :: IO ()
 main = hakyllWith config $ do
+    match "robots.txt" $ do
+        route   idRoute
+        compile copyFileCompiler
+
     match ("images/*" .||. "js/*") $ do
         route   idRoute
         compile copyFileCompiler
