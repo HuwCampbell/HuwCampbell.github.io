@@ -31,10 +31,6 @@ main = hakyllWith config $ do
         route $ customRoute $ ("." <>) . toFilePath
         compile copyFileCompiler
 
-    match "actor" $ do
-        route   idRoute
-        compile copyFileCompiler
-
     match (fromList ["about.markdown", "resume.markdown"]) $ do
         route   $ setExtension "html"
         compile $ pandocCompiler
