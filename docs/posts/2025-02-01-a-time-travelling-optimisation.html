@@ -70,7 +70,7 @@
 <h5>
 How the Tardis Monad and a Stitching Graph helps discover affine array usage, permitting destructive updates.
 </h5>
-<p>This was originally posted on the <a href="https://icicle-lang.github.io/">Icicle Dev Blog</a>. I’ve recreated it here.</p>
+<p>This was originally posted on the <a href="https://icicle-lang.github.io/">Icicle Dev Blog</a> and is cross-posted here.</p>
 <p>Icicle is a high-level streaming query language, which gives new capabilities to its users,
 allowing them to combine and fuse hundreds of rich, individual, queries into a combined plan for
 safe and efficient execution.</p>
@@ -154,8 +154,8 @@ reuses constructors (like list’s cons) too.</p>
 <p>In Icicle, we avoid using reference counting and instead use a simple bump allocator per
 entity. We do this because:</p>
 <ul>
-<li>Except for arrays and strings all bindings are placed directly onto the stack;</li>
 <li>It’s fast;</li>
+<li>Except for arrays and strings all bindings are placed directly onto the stack;</li>
 <li>Each entity runs separately and is bounded by the number of events; and</li>
 <li>It makes clearing memory when we’ve finished processing an entity close to trivial.</li>
 </ul>
@@ -163,13 +163,13 @@ entity. We do this because:</p>
 efficiency, but here we do it entirely at compile time.</p>
 <p>The constraints for this optimization are:</p>
 <ul>
-<li>It should remove copies if the original array will not be accessed again.</li>
-<li>It must not alter the results of a query.</li>
+<li>It should remove copies if the original array will not be accessed again;</li>
+<li>It must not alter the results of a query; and</li>
 <li>It must not unduly slow down compilation.</li>
 </ul>
 <p>To eliminate a copy operation, we need to identify two key factors:</p>
 <ul>
-<li>All references that <em>might</em> point to the array at the time of copying.</li>
+<li>All references that <em>might</em> point to the array at the time of copying; and</li>
 <li>All references that are <em>used</em> after the copy is made.</li>
 </ul>
 <p>If there are no subsequent usages of any reference that might point to the array about
@@ -210,8 +210,8 @@ and fully applied applications.</p>
 they contain the <code>Statement</code> that can use the binding introduced. To make life
 easier, we disallow shadowing in this DSL – shadowed bindings in the source
 language will be freshened.</p>
-<p>Furthermore, we should note that Avalanche programs can get pretty large, with map
-operations for example often including code for a binary search. Typical Avalanche
+<p>Finally, we should note that Avalanche programs can get pretty large, with map
+operations, for example, often including code for a binary search. Typical Avalanche
 programs also contain the code for up to a hundred user queries.</p>
 <h2 id="building-a-reference-graph">Building a Reference Graph</h2>
 <p>We want to build a directed graph of all references, so that we can determine if
@@ -453,9 +453,9 @@ to its initial state when keys are removed as they go out of scope.</p>
 <span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>      <span class="kw">in</span> {</span>
 <span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">arr</span> :<span class="op">=</span> <span class="co">{- write `len` to index `len` -}</span></span>
 <span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>          <span class="fu">array_insert</span> <span class="fu">b</span> <span class="fu">len</span> <span class="fu">len</span></span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>      }      </span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>      }</span>
 <span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>  }  </span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>  }</span>
 <span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>This program should produce an array that looks like this:</p>
 <pre><code>[0,1,2,3,...]</code></pre>

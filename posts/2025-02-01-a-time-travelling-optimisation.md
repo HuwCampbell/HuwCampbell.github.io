@@ -9,7 +9,7 @@ author: Huw Campbell
 How the Tardis Monad and a Stitching Graph helps discover affine array usage, permitting destructive updates.
 </h5>
 
-This was originally posted on the [Icicle Dev Blog](https://icicle-lang.github.io/). I've recreated it here.
+This was originally posted on the [Icicle Dev Blog](https://icicle-lang.github.io/) and is cross-posted here.
 
 Icicle is a high-level streaming query language, which gives new capabilities to its users,
 allowing them to combine and fuse hundreds of rich, individual, queries into a combined plan for
@@ -128,8 +128,8 @@ reuses constructors (like list's cons) too.
 In Icicle, we avoid using reference counting and instead use a simple bump allocator per
 entity. We do this because:
 
-- Except for arrays and strings all bindings are placed directly onto the stack;
 - It's fast;
+- Except for arrays and strings all bindings are placed directly onto the stack;
 - Each entity runs separately and is bounded by the number of events; and
 - It makes clearing memory when we've finished processing an entity close to trivial.
 
@@ -138,13 +138,13 @@ efficiency, but here we do it entirely at compile time.
 
 The constraints for this optimization are:
 
-- It should remove copies if the original array will not be accessed again.
-- It must not alter the results of a query.
+- It should remove copies if the original array will not be accessed again;
+- It must not alter the results of a query; and
 - It must not unduly slow down compilation.
 
 To eliminate a copy operation, we need to identify two key factors:
 
-- All references that _might_ point to the array at the time of copying.
+- All references that _might_ point to the array at the time of copying; and
 - All references that are _used_ after the copy is made.
 
 If there are no subsequent usages of any reference that might point to the array about
@@ -197,8 +197,8 @@ they contain the `Statement` that can use the binding introduced. To make life
 easier, we disallow shadowing in this DSL – shadowed bindings in the source
 language will be freshened.
 
-Furthermore, we should note that Avalanche programs can get pretty large, with map
-operations for example often including code for a binary search. Typical Avalanche
+Finally, we should note that Avalanche programs can get pretty large, with map
+operations, for example, often including code for a binary search. Typical Avalanche
 programs also contain the code for up to a hundred user queries.
 
 
@@ -479,9 +479,9 @@ in {
       in {
         arr := {- write `len` to index `len` -}
           array_insert b len len
-      }      
+      }
     }
-  }  
+  }
 }
 ```
 
@@ -570,7 +570,7 @@ That said, I think one could make this work in a strict language, by adopting a 
 straight forward, explicit two pass approach, where in the forwards pass, instead of returning
 a `Statement` value, we return a function, `Usage -> (Statement, Usage)`; and pass the usage
 set backwards while building the graph in our reverse pass.
-  
+
   [Advanced R]: http://adv-r.had.co.nz/memory.html#modification
   [Precise, Automatic, Reference Counting]: https://koka-lang.github.io/koka/doc/book.html#why-perceus
   [Counting Immutable Beans]: https://arxiv.org/pdf/1908.05647
