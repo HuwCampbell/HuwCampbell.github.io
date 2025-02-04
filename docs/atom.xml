@@ -8,8 +8,16 @@
         <name>Huw Campbell</name>
         <email>huw@huwcampbell.com</email>
     </author>
-    <updated>2020-09-18T00:00:00Z</updated>
+    <updated>2025-02-01T00:00:00Z</updated>
     <entry>
+    <title>Destructive Updates - a Stitch in Time</title>
+    <link href="https://huwcampbell.com/posts/2025-02-01-a-time-travelling-optimisation.html" />
+    <id>https://huwcampbell.com/posts/2025-02-01-a-time-travelling-optimisation.html</id>
+    <published>2025-02-01T00:00:00Z</published>
+    <updated>2025-02-01T00:00:00Z</updated>
+    <summary type="html"><![CDATA[How the Tardis Monad and a Stitching Graph helps discover affine array usage, reducing run times by up to a half.]]></summary>
+</entry>
+<entry>
     <title>Optimised Row Columnar for Haskell</title>
     <link href="https://huwcampbell.com/posts/2020-09-18-announcing-orc-haskell.html" />
     <id>https://huwcampbell.com/posts/2020-09-18-announcing-orc-haskell.html</id>

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+  <title>Huw Campbell - Destructive Updates - a Stitch in Time</title>
+  <meta name="author" content="Huw Campbell">
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/syntax.css">
+  <link rel="stylesheet" href="../css/custom.css">
+
+  <!-- Me -->
+  <link rel="me" href="https://github.com/HuwCampbell">
+  <link rel="me" href="https://www.facebook.com/huw.campbell">
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="images/favicon.png">
+
+  <!-- ATOM Feed
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="../atom.xml" type="application/atom+xml" rel="alternate" title="ATOM Feed" />
+
+</head>
+<body>
+
+  <!-- Primary Page Layout
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <div class="container">
+    <div class="three columns sidebar">
+        <nav>
+            <a href="../"><img class="titular" src="../images/pirate.jpg" alt="Huw Campbell"></a>
+            <h3 id="logo">Huw Campbell</h3>
+            <ul>
+                <li><a href="../">Home</a></li>
+                <li><a href="../about.html">About</a></li>
+                <li><a href="../archive.html">Posts</a></li>
+                <li><a href="../resume.html">Resume</a></li>
+                <li><a href="https://github.com/HuwCampbell">Github</a></li>
+            </ul>
+        </nav>
+        &nbsp;
+    </div>
+
+    <div class="nine columns content">
+        <h1>Destructive Updates - a Stitch in Time</h1>
+
+        <div class="info">
+    Posted on February  1, 2025
+    
+        by Huw Campbell
+    
+    
+</div>
+
+<h5>
+How the Tardis Monad and a Stitching Graph helps discover affine array usage, permitting destructive updates.
+</h5>
+<p>Icicle is a high-level streaming query language, which gives new capabilities to its users,
+allowing them to combine and fuse hundreds of rich, individual, queries into a combined plan for
+safe and efficient execution.</p>
+<p>At the heart of the language is our Core intermediate language, which we’ve spoken about optimising
+in <a href="../posts/2020-09-04-traversals-for-optimisations.html">an earlier post</a>. This is a pure,
+simply-typed lambda calculus based DSL with restrictions on arbitrary recursion and closure creation.</p>
+<p>To ensure speed, we compile all queries to C and convert almost all of our data types into simple,
+unboxed C types. For example, the <code>Either Int Bool</code> type will compile into three C variables on the
+stack, indicating the tag, and variables for the left and right values.</p>
+<p>Maps and arrays in the language, however, compile using the struct of arrays approach when transitioning
+to C; compiling down to potentially many C arrays of simple types. However, as Icicle Core is a <em>pure</em>
+language, during lowering the compiler inserts copy operations to arrays before performing any
+mutations upon them.</p>
+<p>This is the story of how we eliminate the overwhelming majority of these copy operations from idiomatic
+Icicle code by performing destructive updates during operations such as inserting into a map or sorting
+an array, while maintaining query semantics and reducing run-times by up to 50%.</p>
+<h2 id="motivating-queries">Motivating Queries</h2>
+<p>It’s very common in Icicle queries to use the built in <code>group</code> context, which acts somewhat like an
+SQL group by. For example, the following query looks at a stream of injuries, then computes
+a map of locations to the sum of the injuries’ severities.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">from</span> <span class="fu">injury</span> <span class="kw">in</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group</span> <span class="fu">location</span> <span class="kw">in</span> <span class="fu">sum</span> <span class="fu">severity</span></span></code></pre></div>
+<p>in our core language, this will become something like this (omitting error handling):</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="dt">STREAM_FOLD</span> <span class="fu">accum</span> : <span class="dt">Map</span> <span class="dt">String</span> <span class="dt">Double</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">INIT</span>:</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Map</span> []</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">KONS</span>:</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">severity</span> <span class="op">=</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">get_severity</span><span class="op">#</span> <span class="fu">input</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">location</span> <span class="op">=</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="fu">get_location</span><span class="op">#</span> <span class="fu">input</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">in</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Map_insertOrUpdate</span><span class="op">#</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        (\<span class="fu">current</span> <span class="op">-&gt;</span> <span class="fu">add</span><span class="op">#</span> <span class="fu">current</span> <span class="fu">severity</span>)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="fu">severity</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">location</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        <span class="fu">accum</span></span></code></pre></div>
+<p>When compiled to our lower level DSLs, and finally on to C, this query will end up being backed by
+two arrays. As new events come in and are updated, it would be best to keep memory usage linear
+with number of keys. Due to the implicit copy operation from the pure Core DSL though, a naïve
+approach might end up using memory proportional to the product of the number of keys times and
+number of injuries.</p>
+<h2 id="a-retrospective---how-reference-counting-enables-copy-elision">A Retrospective - How Reference Counting Enables Copy Elision</h2>
+<p>The R programming language is popular amongst statisticians and data scientists, and has a number
+of distinctive properties. Most operations in R are pure and referentially transparent, which is
+critical for its ease of use and safety. It’s also a language with pervasive vectorisation. All the
+core data structures of R are vectors. With atomic vectors neatly wrapping C arrays.</p>
+<p>People still want their R code to be relatively performant however, and adding naïve copying to
+every vector update would be prohibitively slow.</p>
+<p>Look at this R program:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> x    <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> y    <span class="ot">&lt;-</span> x</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> x[<span class="dv">5</span>] <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> x</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a> [<span class="dv">1</span>]  <span class="dv">1</span>  <span class="dv">2</span>  <span class="dv">3</span>  <span class="dv">4</span> <span class="dv">10</span>  <span class="dv">6</span>  <span class="dv">7</span>  <span class="dv">8</span>  <span class="dv">9</span> <span class="dv">10</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> y</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a> [<span class="dv">1</span>]  <span class="dv">1</span>  <span class="dv">2</span>  <span class="dv">3</span>  <span class="dv">4</span>  <span class="dv">5</span>  <span class="dv">6</span>  <span class="dv">7</span>  <span class="dv">8</span>  <span class="dv">9</span> <span class="dv">10</span></span></code></pre></div>
+<p>This program maintains R’s referential semantics, but under the covers there are some
+interesting things going on. One might first assume that when
+<code>y</code> is bound to <code>x</code>, a copy of the vector is made, but that is <em>not</em> what R is going to do here.</p>
+<p>In R, names are just ways to reference values, and in this case, there will be two names pointing
+to the atomic vector <code>1:10</code>; and when <code>x</code> is going to be mutated, a copy of the backed array will
+be made at that point in time.</p>
+<p>This program however will do something very different:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> x    <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> x[<span class="dv">5</span>] <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> x</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a> [<span class="dv">1</span>]  <span class="dv">1</span>  <span class="dv">2</span>  <span class="dv">3</span>  <span class="dv">4</span> <span class="dv">10</span>  <span class="dv">6</span>  <span class="dv">7</span>  <span class="dv">8</span>  <span class="dv">9</span> <span class="dv">10</span></span></code></pre></div>
+<p>In this program, because there’s only one name pointing to the vector in question, the value
+will be updated in place. R can perform this optimisation because it’s a reference counted
+language and when the <code>[]&lt;-</code> function is called, it can look at the number of references which
+exist – then, if there’s only one (itself), it knows it can modify in place without the
+optimisation breaking the program’s semantics (see <a href="http://adv-r.had.co.nz/memory.html#modification">Advanced R</a>).</p>
+<p>Other languages which employ this technique include the <a href="https://arxiv.org/pdf/1908.05647">Lean proof assistant</a>
+and functional programming language and <a href="https://koka-lang.github.io/koka/doc/book.html#why-perceus">Koka</a>, which
+reuses constructors (like list’s cons) too.</p>
+<h2 id="icicle-compilation-time-copy-elision">Icicle – Compilation Time Copy Elision</h2>
+<p>In Icicle, we avoid using reference counting and instead use a simple bump allocator per
+entity. We do this because:</p>
+<ul>
+<li>Except for arrays and strings all bindings are placed directly onto the stack;</li>
+<li>It’s fast;</li>
+<li>Each entity runs separately and is bounded by the number of events; and</li>
+<li>It makes clearing memory when we’ve finished processing an entity close to trivial.</li>
+</ul>
+<p>That said, we should still aim to reduce new array allocations though for speed and memory
+efficiency, but here we do it entirely at compile time.</p>
+<p>The constraints for this optimization are:</p>
+<ul>
+<li>It should remove copies if the original array will not be accessed again.</li>
+<li>It must not alter the results of a query.</li>
+<li>It must not unduly slow down compilation.</li>
+</ul>
+<p>To eliminate a copy operation, we need to identify two key factors:</p>
+<ul>
+<li>All references that <em>might</em> point to the array at the time of copying.</li>
+<li>All references that are <em>used</em> after the copy is made.</li>
+</ul>
+<p>If there are no subsequent usages of any reference that might point to the array about
+to be copied, we can eliminate the copy operation and simply alias the binding instead.</p>
+<p>But this presents a challenge: all the references we need to consider arise from before
+the copy operation; while all the usages come from after it. So at any point in the
+query, we need to have performed both forward and backward passes over the AST to
+know what to do.</p>
+<p>Finally, as Icicle’s semantics are essentially a strict left fold, which is
+compiled to a for loop, our internal DSL must contain looping structures (for and while).
+One can imagine that even the definition of future and past accesses could get a little
+muddy, as each loop could reference data from previous iterations.</p>
+<h2 id="avalanche---our-internal-dsl">Avalanche - Our Internal DSL</h2>
+<p>We perform copy elision within a low level internal DSL called avalanche. This is a small
+imperative language which contains basic <em>if</em> and <em>foreach</em> statements; and can create,
+read from, and update mutable variables. It does <em>not</em> perform IO.</p>
+<p>As a Haskell type, the language looks a bit like this:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Statement</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a> <span class="co">-- | A branch</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a> <span class="ot">=</span> <span class="dt">If</span> <span class="dt">Exp</span> <span class="dt">Statement</span> <span class="dt">Statement</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a> <span class="co">-- | Loop while an accumulator reads true.</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a> <span class="op">|</span> <span class="dt">While</span> <span class="dt">Name</span> <span class="dt">Statement</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a> <span class="co">-- | Loop over facts</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a> <span class="op">|</span> <span class="dt">ForeachFacts</span> <span class="dt">Statement</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a> <span class="co">-- | Execute several statements in a block.</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a> <span class="op">|</span> <span class="dt">Block</span> [<span class="dt">Statement</span>]</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a> <span class="co">-- | Local binding.</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a> <span class="op">|</span> <span class="dt">Let</span> <span class="dt">Name</span> <span class="dt">Exp</span> <span class="dt">Statement</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a> <span class="co">-- | Initialise an accumulator</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a> <span class="op">|</span> <span class="dt">InitAccumulator</span> <span class="op">!</span><span class="dt">Name</span> <span class="op">!</span><span class="dt">Exp</span> <span class="dt">Statement</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a> <span class="co">-- | Read from an accumulator into a local binding</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a> <span class="op">|</span> <span class="dt">Read</span> <span class="dt">Name</span> <span class="dt">Name</span> <span class="dt">Statement</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a> <span class="co">-- | Update an accumulator</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a> <span class="op">|</span> <span class="dt">Write</span> <span class="dt">Name</span> <span class="dt">Exp</span></span></code></pre></div>
+<p>Where <code>Exp</code> is a simple expression type containing variables (<code>Var</code>), primitives,
+and fully applied applications.</p>
+<p>It’s important to note that <code>Let</code>, <code>InitAccumulator</code> and <code>Read</code> introduce scope…
+they contain the <code>Statement</code> that can use the binding introduced. To make life
+easier, we disallow shadowing in this DSL – shadowed bindings in the source
+language will be freshened.</p>
+<p>Furthermore, we should note that Avalanche programs can get pretty large, with map
+operations for example often including code for a binary search. Typical Avalanche
+programs also contain the code for up to a hundred user queries.</p>
+<h2 id="building-a-reference-graph">Building a Reference Graph</h2>
+<p>We want to build a directed graph of all references, so that we can determine if
+a reference might be used again later in the program.</p>
+<p>As this is Haskell, we use a pure, persistent data structure (here, backed by
+a pair of <code>Data.Map Name (Set Name)</code>) which indicate forwards and backwards edges.</p>
+<p>We maintain a few invariants:</p>
+<ul>
+<li>The <code>Set</code> must be non-empty, if a <code>Set</code> becomes empty due to a deletion, we
+also remove the key.</li>
+<li>If we delete a key from the graph, we stitch up its incoming and outgoing edges.
+So the graph <code>a -&gt; b -&gt; c</code> will become <code>a -&gt; c</code> if <code>b</code> is removed.
+<ul>
+<li>This is why we refer to it as a Stitching Graph.</li>
+</ul></li>
+<li>If we <code>overwrite</code> an edge (this is our main <code>insert</code> operation), that edge
+becomes the only edge from the
+starting key. i.e., <code>overwrite a c (overwrite a b empty) == overwrite a c empty</code>.</li>
+<li>If we have a cycle, like <code>a -&gt; b -&gt; a</code> and remove <code>b</code>, the stitching to <code>a -&gt; a</code>
+will be simplified to nothing, and the node will be removed.</li>
+</ul>
+<p>And its API looks a bit like this:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Graph</span> <span class="kw">where</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Graph</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- | Insert an edge into a graph and remove existing ones</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">--   from this node.</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="ot">overwrite ::</span> <span class="dt">Name</span> <span class="ot">-&gt;</span> <span class="dt">Name</span> <span class="ot">-&gt;</span> <span class="dt">Graph</span> <span class="ot">-&gt;</span> <span class="dt">Graph</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">-- | Delete a node and stitch up transiently connected nodes</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="ot">deleteAndStitch ::</span> <span class="dt">Name</span> <span class="ot">-&gt;</span> <span class="dt">Graph</span> <span class="ot">-&gt;</span> <span class="dt">Graph</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">-- | Take the union of the maps</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="ot">merge ::</span> <span class="dt">Graph</span> <span class="ot">-&gt;</span> <span class="dt">Graph</span> <span class="ot">-&gt;</span> <span class="dt">Graph</span></span></code></pre></div>
+<p>Because this structure shares well, it’s ok to build and retain this type as we
+traverse through our program’s AST. Using the <code>State</code> monad in this initial example:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">go ::</span> <span class="dt">Statement</span> <span class="ot">-&gt;</span> <span class="dt">State</span> <span class="dt">Graph</span> <span class="dt">Statement</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>go statement <span class="ot">=</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> statement <span class="kw">of</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">--</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- Let bindings are a lot like reads and</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- initialisations if the expression is</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- a reference, then add to the graph.</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Let</span> nm x inner</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="dt">Just</span> ref <span class="ot">&lt;-</span> arrayReference x <span class="ot">-&gt;</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Let</span> nm x <span class="op">&lt;$&gt;</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>          scopedGo nm ref inner</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="fu">otherwise</span> <span class="ot">-&gt;</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Let</span> nm x <span class="op">&lt;$&gt;</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>          scopedGo' nm inner</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">--</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- If the write is a reference, then we need</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- to know that this memory location has been</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- updated.</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Write</span> n x</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="dt">Just</span> ref <span class="ot">&lt;-</span> arrayReference x <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>        modify <span class="op">$</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>          Graph.overwrite n ref</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>        <span class="fu">pure</span> <span class="op">$</span> <span class="dt">Write</span> n x</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="fu">otherwise</span> <span class="ot">-&gt;</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>        <span class="fu">pure</span> <span class="op">$</span> <span class="dt">Write</span> n x</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">--</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- Traverse the block items in order.</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Block</span> inner <span class="ot">-&gt;</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Block</span> <span class="op">&lt;$&gt;</span> <span class="fu">traverse</span> go inner</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>    <span class="co">--</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- Run both sides and merge</span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>    <span class="dt">If</span> condition truth falsity <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>      aliased      <span class="ot">&lt;-</span> get</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> <span class="op">~</span>(truth',   tA) <span class="ot">=</span> runState (go truth) aliased</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> <span class="op">~</span>(falsity', fA) <span class="ot">=</span> runState (go falsity) aliased</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>      modify <span class="op">$</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>        Graph.merge tA <span class="op">.</span> Graph.merge fA</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>      <span class="fu">return</span> <span class="op">$</span></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>        <span class="dt">If</span> condition truth' falsity'</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>    <span class="co">--</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- Reach a fixpoint, running until the</span></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- graph doesn't change anymore.</span></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>    <span class="dt">ForeachFacts</span> inner <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>      <span class="dt">ForeachFacts</span> <span class="op">&lt;$&gt;</span></span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>        fixGo inner</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a> <span class="kw">where</span></span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>    <span class="co">--</span></span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- This introduces the alias for name to ref, then when it goes</span></span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- out of scope, deletes this name and stitches up transient refs</span></span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- as direct ones.</span></span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>    scopedGo nm ref ss <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>      modify (Graph.overwrite nm ref)</span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>      sS <span class="ot">&lt;-</span> go ss</span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>      modify (Graph.deleteAndStitch nm)</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>      <span class="fu">pure</span> sS</span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>    <span class="co">--</span></span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- Delete this name after it goes out of scope</span></span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- (things might reference it).</span></span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>    scopedGo' nm ss <span class="ot">=</span></span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>      sS <span class="ot">&lt;-</span> go ss</span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>      modify (Graph.deleteAndStitch nm)</span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>      <span class="fu">pure</span> sS</span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>    <span class="co">--</span></span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- Loops are interesting.</span></span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- It's possible to write queries where after a pass is complete</span></span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- accumulators depend on other accumulators initialised before</span></span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- the loop began; so we need to reach a fixpoint on both the</span></span>
+<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- initial alias map and the returned alias map.</span></span>
+<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>    <span class="co">--</span></span>
+<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- If the maps don't match, rerun with the merged alias map on</span></span>
+<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- the original statements.</span></span>
+<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a>    fixGo ss <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a>      before <span class="ot">&lt;-</span> get</span>
+<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a>      sS     <span class="ot">&lt;-</span> go ss</span>
+<span id="cb7-89"><a href="#cb7-89" aria-hidden="true" tabindex="-1"></a>      after  <span class="ot">&lt;-</span> get</span>
+<span id="cb7-90"><a href="#cb7-90" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> merged <span class="ot">=</span> Graph.merge before after</span>
+<span id="cb7-91"><a href="#cb7-91" aria-hidden="true" tabindex="-1"></a>      <span class="kw">if</span> before <span class="op">==</span> merged <span class="kw">then</span></span>
+<span id="cb7-92"><a href="#cb7-92" aria-hidden="true" tabindex="-1"></a>        <span class="fu">pure</span> sS</span>
+<span id="cb7-93"><a href="#cb7-93" aria-hidden="true" tabindex="-1"></a>      <span class="kw">else</span> <span class="kw">do</span></span>
+<span id="cb7-94"><a href="#cb7-94" aria-hidden="true" tabindex="-1"></a>        set merged</span>
+<span id="cb7-95"><a href="#cb7-95" aria-hidden="true" tabindex="-1"></a>        fixGo ss</span>
+<span id="cb7-96"><a href="#cb7-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-97"><a href="#cb7-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-98"><a href="#cb7-98" aria-hidden="true" tabindex="-1"></a>    <span class="co">--</span></span>
+<span id="cb7-99"><a href="#cb7-99" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- Whether this is a `Var` or a function which mutably</span></span>
+<span id="cb7-100"><a href="#cb7-100" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- updates an array and returns it.</span></span>
+<span id="cb7-101"><a href="#cb7-101" aria-hidden="true" tabindex="-1"></a><span class="ot">    arrayReference ::</span> <span class="dt">Exp</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Name</span></span>
+<span id="cb7-102"><a href="#cb7-102" aria-hidden="true" tabindex="-1"></a>    arrayReference <span class="ot">=</span> \<span class="kw">case</span></span>
+<span id="cb7-103"><a href="#cb7-103" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Var</span> nm <span class="ot">-&gt;</span></span>
+<span id="cb7-104"><a href="#cb7-104" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Just</span> nm</span>
+<span id="cb7-105"><a href="#cb7-105" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Exp.App</span> (<span class="dt">Exp.Prim</span> <span class="dt">Prim.SortInPlace</span>) argument <span class="ot">-&gt;</span></span>
+<span id="cb7-106"><a href="#cb7-106" aria-hidden="true" tabindex="-1"></a>        arrayReference argument</span>
+<span id="cb7-107"><a href="#cb7-107" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span></span></code></pre></div>
+<p>with <code>Read</code> and <code>InitAccumulator</code> omitted as they look very much like <code>Let</code>; and
+<code>While</code> as it looks like <code>ForeachFacts</code>.</p>
+<h2 id="stepping-into-the-tardis">Stepping into the Tardis</h2>
+<p>That’s our forwards pass done, so at any point we know what the graph of
+references looks like; but we’re only half way there, as we don’t know what
+bindings are used later in the program.</p>
+<p>For this we need to propagate information backwards, which we can do thanks
+to laziness and the reverse state monad. One package providing a nice
+combination of both a forwards and reverse state Monads is the <a href="https://hackage.haskell.org/package/tardis"><code>tardis</code></a>
+package, which supplies the <code>Tardis</code> monad.</p>
+<p>In the above code listing, we swap to the <code>Tardis</code> monad and replace <code>get</code>
+with <code>getPast</code> and <code>modify</code> with <code>modifyForwards</code>. Also, every time we see
+a <code>Name</code> in either a <code>Var</code> in <code>Exp</code> or as the named item in, for example,
+a <code>Read</code>, we send backwards the usages (free variables)</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ot">go ::</span> <span class="dt">Statement</span> <span class="ot">-&gt;</span> <span class="dt">Tardis</span> (<span class="dt">Set</span> <span class="dt">Name</span>) <span class="dt">Graph</span> <span class="dt">Statement</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>go statement <span class="ot">=</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> statement <span class="kw">of</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Let</span> nm x ss</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="dt">Just</span> ref <span class="ot">&lt;-</span> arrayReference x <span class="ot">-&gt;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        modifyBackwards (Set.delete nm <span class="op">.</span> Set.union (Exp.freeVars x))</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Let</span> nm x <span class="op">&lt;$&gt;</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>          scopedGo nm ref ss</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="fu">otherwise</span> <span class="ot">-&gt;</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>        modifyBackwards (Set.delete nm <span class="op">.</span> Set.union (Exp.freeVars x))</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Let</span> nm x <span class="op">&lt;$&gt;</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>          scopedGo' nm ss</span></code></pre></div>
+<p>Because we also remove bindings created by <code>Let</code> and friends as we
+traverse backwards, effectively we’re maintaining the <code>Set</code> of free variables
+observed in this backwards pass.</p>
+<h2 id="performing-the-copy-elision">Performing the Copy Elision</h2>
+<p>Our elaborator to <code>Avalanche</code> will emit a copy operation before performing
+any mutating action (for example: heap sort, or update), but fortunately
+it emits these in a very predictable fashion – directly as the expression
+being written to an accumulator. As such, we don’t need to be too careful
+threading the <code>Tardis</code> states through the <code>Exp</code> syntax tree in addition to
+the <code>Statement</code> syntax tree and we can cheat a little and add a rewrite
+directly in the definition of <code>go</code></p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>go statements <span class="ot">=</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> statements <span class="kw">of</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">--</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- Here's the key judgement and rewrite.</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- This write copies an array into an accumulator.</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Write</span> n x</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">|</span> <span class="dt">Exp.App</span> (<span class="dt">Exp.Prim</span> <span class="dt">Prim.ArrayCopy</span>) (<span class="dt">Exp.Var</span> ref) <span class="ot">&lt;-</span> x <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        modifyBackwards (Set.insert ref)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        aliased <span class="ot">&lt;-</span> getPast</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        used    <span class="ot">&lt;-</span> getFuture</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>        <span class="co">--</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>        <span class="co">-- It's important to add this ref when we're calculating</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        <span class="co">-- loop fixpoints.</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>        modifyForwards <span class="op">$</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>          Graph.overwrite n ref</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>        <span class="fu">pure</span> <span class="op">$</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>          <span class="co">--</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>          <span class="co">-- Here's the important calculation.</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>          <span class="co">-- Fortunately this is lazy, allowing us to &quot;fix&quot;</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>          <span class="co">-- the Tardis.</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>          <span class="kw">if</span> hasNoFurtherReferences n ref aliased used <span class="kw">then</span> <span class="kw">do</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Write</span> n (<span class="dt">Exp.Var</span> ref)</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>          <span class="kw">else</span> <span class="kw">do</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Write</span> n x <span class="co">-- keep the original</span></span></code></pre></div>
+<p>where the function <code>hasNoFurtherReferences</code> looks at the graph and
+does a search from all used variables to all references which might be shared with them,
+as well as a similar search from the ref. If these transitive dependency sets
+are disjoint, it means there’s no possible way that the array could be looked at
+after this write, making it safe to mutate it in place.</p>
+<p>If there was an intersection, that would indicated that a value might be used which
+points to the same memory location as <code>ref</code>, and we have to keep the copy
+operation to maintain our program’s semantics.</p>
+<h2 id="fixing-faster-with-stitches">Fixing Faster with Stitches</h2>
+<p>One of the things which is challenging is the definition of <code>fixGo</code>. Because
+we have to deal with nested loops quite a lot, it’s imperative that most loops
+reach their fixpoint on their first iteration, lest we suffer from
+exponential slowdowns as we delve deeper repeating nested loops.</p>
+<p>This is one the key reason for using our Stitching Graph – it’s very good at returning
+to its initial state when keys are removed as they go out of scope.</p>
+<p>Consider this program, written in an pseudo-syntax for avalanche.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">init</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arr</span> <span class="op">=</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    []</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> {</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach_fact</span> {</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">read</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">a</span> <span class="op">=</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">arr</span> <span class="co">{- read `arr` to a local binding -}</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">in</span> {</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">b</span> <span class="op">=</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>          <span class="fu">array_copy</span> <span class="fu">a</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>        <span class="fu">len</span> <span class="op">=</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>          <span class="fu">array_length</span> <span class="fu">b</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>      <span class="kw">in</span> {</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">arr</span> :<span class="op">=</span> <span class="co">{- write `len` to index `len` -}</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>          <span class="fu">array_insert</span> <span class="fu">b</span> <span class="fu">len</span> <span class="fu">len</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>      }      </span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>  }  </span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>This program should produce an array that looks like this:</p>
+<pre><code>[0,1,2,3,...]</code></pre>
+<p>with a length equal to the number of facts seen, but will
+the copy operation be removed, and, will the fixpoint for <em>foreach_fact</em>
+be determined in a single pass? Let’s have a look:</p>
+<ol type="1">
+<li>The initialisation of <code>arr</code> is a pure expression, so doesn’t introduce anything
+into the reference graph.</li>
+<li>When we reach <code>foreach_facts</code> the first time, the graph is empty.</li>
+<li>When we <code>read a = arr</code> the accumulator <code>arr</code> into <code>a</code>, the graph gains a reference
+<ul>
+<li><code>a -&gt; arr</code></li>
+</ul></li>
+<li>In let binding <code>b</code>, we reach a copy operation.
+<ul>
+<li>It’s clear that no references of <code>arr</code> are used again (writing to it doesn’t
+count as usage), so this copy will be omitted.</li>
+<li>We have to add the reference <code>b -&gt; a</code></li>
+<li>Our graph is now <code>b -&gt; a -&gt; arr</code></li>
+</ul></li>
+<li>Binding <code>len</code> doesn’t introduce any references into the graph.</li>
+<li>Writing to <code>arr</code> introduces a new edge to the graph, so we have
+<ul>
+<li><code>arr -&gt; b -&gt; a -&gt; arr</code></li>
+</ul></li>
+<li>As we leave the scope of the let bindings
+<ul>
+<li>b will be removed and we’ll have <code>arr -&gt; a -&gt; arr</code></li>
+</ul></li>
+<li>As we leave the scope of the <code>read</code>, we’ll further drop <code>a</code> from the graph
+<ul>
+<li>Here though, we would have <code>arr -&gt; arr</code>, but, these are simplified,</li>
+<li>Therefore our final graph after leaving the scope of <code>read</code> is the empty graph</li>
+</ul></li>
+<li>As this was the graph at the start of the <code>foreach_facts</code>, we’ve reached our
+fixpoint in a single traversal of the AST, and the copy has been removed.</li>
+</ol>
+<p>So the answer to both of our questions is in the affirmative.</p>
+<h2 id="commentary-and-future-work">Commentary and Future Work</h2>
+<p>It’s worth thinking about generalising this algorithm, and considering how it
+relates to others previously described.</p>
+<p>In a real sense, we’ve written an abstract interpreter for our programs, tracking possible
+pointer references. While I am not 100% across the literature on reference
+counting optimisations, this sort of information strikes me as potentially
+very useful for optimising functional languages which use it.</p>
+<p>For example, if we examine our reference graph and see that the potential references
+will always be zero or no usages will be used in the future, we won’t even need to check
+the reference count at all and can either drop or recycle a memory location immediately.</p>
+<p>We could further extend our Graph algorithm to include the possible range of counts between
+references – which would mostly entail changes to the merging and stitching algorithms.
+With this information, if we observed an object used inside a scoped operation
+which always had the exact same positive number of edges to it at entry and exit,
+it would seem we could again eliminate all reference counting operations on it –
+they must cancel out.</p>
+<p>In our case, we have a whole-program compiler and optimiser, so we can get a <em>very</em> good
+view of the reference graph; if we however were working with smaller functions, we would
+need to keep track of what we don’t know. Arguments passed to functions for example,
+would have any number of possible edges from the outside of the function, meaning we can’t
+omit operations as easily. But as we inlined functions, new opportunities might arise.</p>
+<p>For example, consider the function <code>map h . filter g . map f</code>: if this were to be aggressively
+inlined, then we would <em>know</em>, that the <code>cons</code> cells output from <code>map f</code> part would have no
+external references to them; this means that <code>filter g</code> could drop <code>cons</code> cells
+without even looking at their reference count when the predicate fails. Furthermore,
+the function <code>map h</code> could immediately reuse the memory locations for every cons cell still
+around, replacing the values after applying <code>h</code> to them.</p>
+<p>How much of an improvement if any this might offer over <a href="https://arxiv.org/pdf/1908.05647">Counting Immutable Beans</a> is an
+open question.</p>
+<h2 id="application-in-a-strict-language">Application in a Strict Language</h2>
+<p>The discovery of this algorithm was challenging, it took time and iteration – and
+even though I could intuitively see copy operations which could be removed,
+writing an even close to <code>O(n)</code> algorithm was proving to be trifficult.</p>
+<p>It was only when I remembered Phil Freeman’s Tardis Monad <a href="https://gist.github.com/paf31/9d84ecf6a6a9b69cdb597a390f25764d">water problem solution</a> that
+I managed to solidify my ideas and really nail down the algorithm.</p>
+<p><em>Laziness, purity, and monadic composition were critical in allowing me to discover this algorithm.</em></p>
+<p>That said, I think one could make this work in a strict language, by adopting a relatively
+straight forward, explicit two pass approach, where in the forwards pass, instead of returning
+a <code>Statement</code> value, we return a function, <code>Usage -&gt; (Statement, Usage)</code>; and pass the usage
+set backwards while building the graph in our reverse pass.</p>
+
+    </div>
+  </div>
+
+<!-- End Document
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+</body>
+</html>
