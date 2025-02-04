@@ -70,11 +70,12 @@
 <h5>
 How the Tardis Monad and a Stitching Graph helps discover affine array usage, permitting destructive updates.
 </h5>
+<p>This was originally posted on the <a href="https://icicle-lang.github.io/">Icicle Dev Blog</a>. I’ve recreated it here.</p>
 <p>Icicle is a high-level streaming query language, which gives new capabilities to its users,
 allowing them to combine and fuse hundreds of rich, individual, queries into a combined plan for
 safe and efficient execution.</p>
 <p>At the heart of the language is our Core intermediate language, which we’ve spoken about optimising
-in <a href="../posts/2020-09-04-traversals-for-optimisations.html">an earlier post</a>. This is a pure,
+in <a href="https://icicle-lang.github.io/posts/2020-09-04-traversals-for-optimisations.html">an earlier post</a>. This is a pure,
 simply-typed lambda calculus based DSL with restrictions on arbitrary recursion and closure creation.</p>
 <p>To ensure speed, we compile all queries to C and convert almost all of our data types into simple,
 unboxed C types. For example, the <code>Either Int Bool</code> type will compile into three C variables on the
