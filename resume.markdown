@@ -269,6 +269,6 @@ Interests
 <div class="four columns">
 <ul>
 <li>Type systems</li>
-<li>Machine learning</li>
+<li>Animal conservation</li>
 </div>
 </div>

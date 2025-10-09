@@ -1,5 +1,8 @@
 ---
 title: 8 Queens Problem
+description: |
+  Solution to the 8 Queens Problem in Haskell's type system
+  using type families and singletons.
 tags: haskell
 ---
 
