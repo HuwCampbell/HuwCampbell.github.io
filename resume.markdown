@@ -11,13 +11,16 @@ present a well rounded professional.
 Software Engineering and Data Science
 -----------------------
 
-Currently working for a machine learning and data science start-up
-specialising in massive scale feature engineering and model development
-with deep customer integrations. I have been responsible for pipeline
-construction, customer analytics, and model building; and have built
-systems catering to millions of customers in varied business spaces.
-Some of my interests in this space are deep learning, infrastructure
-development, model optimisation, and creative experimental designs.
+Cross domain functional programmer interested in type theory, domain
+specific languages, streaming data solutions, and research.
+
+I'm currently working for a high impact data engineering consultancy,
+specialising in stream processing and big data solutions and integration.
+I have been responsible for pipeline construction, customer analytics,
+and model building; and have built systems catering to millions of
+customers in varied business spaces. Some of my interests in this space
+are deep learning, infrastructure development, model optimisation,
+and creative experimental designs.
 
 Scientific Research
 ------------------------------
@@ -60,6 +63,21 @@ Education
 Experience
 ----------
 
+
+**Icicle Language and Platform**, Icicle Platform ( Continuing )
+
+Icicle is a novel, streaming query language with a distinctive modal type
+system for handling the single pass invariants of a streaming computation
+as well as predictable and explicit error handling.
+
+I've been working to bring Icicle up to commercial standards, discovering
+novel optimisation techniques and improving its typing rules for correctness
+and flexibility. Concurrently, I've implemented an efficient Kafka
+streaming execution engine, and researched and discovered novel storage
+techniques for on disc representation of recursive data types in columnar
+file formats.
+
+
 **Principal Consultant**, Simple Machines ( September 2018 – Present )
 
 Simple Machines is a high end technology consulting firm, my role is
@@ -74,6 +92,17 @@ and disciplines, including:
   designed to help businesses collaborate more productively when performing
   analytics or machine learning tasks. With a custom version control system
   and governance workflow, and high performance Spark backend.
+- Next Best Action Consulting.<br>
+  I am a principle consultant working on a complex NBA system for a large
+  telecommunications provider. Coming to the team I had to become proficient
+  in Kotlin rapidly, and work effectively in distributed team over a numerous
+  complex systems.<br>
+  Work I'm most proud of in this project is optimising the weakly typed DSL
+  used by users to describe business rules. I implemented code analysis and
+  splitting based on dependency tracking, to reduce redundant computation
+  applied to similar product combinations, and a compiler to simple but performant
+  Java code for just in time compilation. These improvements increased performance
+  of user defined queries by more than 100x.
 - Big data streaming productionisation in Kafka and Spark.<br>
   Reworked and advised a new Kafka architectures which would better
   facilitate propagating cell tower data at rates higher than 200 gigabytes
@@ -139,6 +168,10 @@ Private tutoring in mathematics and physics from high school to undergraduate le
 
 Online tutoring in maths and sciences for high school students.
 
+**Zoo Keeper**
+
+I currently volunteer as a Zoo Keeper.
+
 Scientific Skills
 -----------------
 
@@ -200,14 +233,14 @@ Computer Science Skills
 <div class="six columns" >
 <ul>
 <li>Functional Programming</li>
-<li>Software design and architecture</li>
+<li>Compiler and DSL engineering</li>
 <li>Streaming data solutions</li>
 </ul>
 </div>
 <div class="six columns">
 <ul>
+<li>Software design and architecture</li>
 <li>Big data solutions</li>
-<li>Compiler and DSL engineering</li>
 <li>Testing and correctness</li>
 </div>
 </div>
@@ -219,10 +252,12 @@ Computer Science Skills
 <ul>
 <li>Haskell</li>
 <li>Scala</li>
+<li>Kotlin</li>
 </ul>
 </div>
 <div class="four columns">
 <ul>
+<li>Typescript</li>
 <li>Nix</li>
 <li>C</li>
 </div>
@@ -238,6 +273,7 @@ Computer Science Skills
 <div class="four columns" >
 <ul>
 <li>optparse-applicative</li>
+<li>Icicle query language</li>
 </ul>
 </div>
 <div class="four columns">
