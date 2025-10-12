@@ -18,9 +18,10 @@ I'm currently working for a high impact data engineering consultancy,
 specialising in stream processing and big data solutions and integration.
 I have been responsible for pipeline construction, customer analytics,
 and model building; and have built systems catering to millions of
-customers in varied business spaces. Some of my interests in this space
-are deep learning, infrastructure development, model optimisation,
-and creative experimental designs.
+customers in varied business spaces. Some of my interests piqued in this
+role have been streaming data solutions, infrastructure development,
+model optimisation, creative experimental designs, and applying functional
+programming best practices.
 
 Scientific Research
 ------------------------------
@@ -34,7 +35,7 @@ these skill sets to use in solving novel problems.
 My Ph.D involved using scanning tunnelling microscopy to fabricate
 nanoscale devices in solid state systems, with the longer term goal
 of fabricating a scalable, solid state, quantum computer. My
-theoretical extended from this, using quantum information theory
+theoretical work extended from this, using quantum information theory
 to investigate the physics and applications of quantum computation,
 and data analysis to assess my experimental results.  These experiences
 provide a strong understanding of data analysis and mathematics,
@@ -66,9 +67,11 @@ Experience
 
 **Icicle Language and Platform**, Icicle Platform ( Continuing )
 
-Icicle is a novel, streaming query language with a distinctive modal type
-system for handling single pass invariants required for streaming computation;
-as well as predictable and explicit error handling.
+Icicle is a novel streaming query language distinguished by its
+modal type system, which is designed to manage the single-pass invariants
+essential for streaming computation; as well as support predictable and
+explicit error handling.
+
 
 I've been working to bring Icicle up to commercial standards, discovering
 novel optimisation techniques and improving its typing rules for correctness
@@ -76,6 +79,9 @@ and flexibility. Concurrently, I've implemented an efficient Kafka
 streaming execution engine, and researched and discovered novel storage
 techniques for on disc representation of recursive data types in columnar
 file formats.
+
+The Icicle Compiler is written in Haskell, with low level primitives
+implemented in C.
 
 
 **Principal Consultant**, Simple Machines ( September 2018 – Present )
@@ -108,8 +114,13 @@ and disciplines, including:
   facilitate propagating cell tower data at rates higher than 200 gigabytes
   per hour. Consumed and processed this data with a custom, high capacity
   Spark streaming application.
-- Kafka streaming and Snowflake database solutions for a banking client
-- Education and Training
+- Kafka streaming and Snowflake database solutions for a small bank.<br>
+  My work was to integrate and support Kafka workflows from On-Prem to Cloud;
+  supplementing this work with Data Science consulting which allowed for fluid
+  assistance to their customers.
+- Education and Training<br>
+  I enjoy facilitating learning amongst our teams and have run Haskell and Functional
+  Programming workshops numerous times for my colleagues.
 
 **Machine Learning Researcher / Data Scientist**, Ambiata ( March 2014 – August 2018 )
 
@@ -126,6 +137,11 @@ management, and team education.
 - Presentations for *The Data Warehouse Institute*, as well as functional
   programming and technical meetups and conferences.
 
+- Technologies:
+  - Haskell
+  - Scala
+  - R
+  - AWS
 
 **Post-doctorate researcher**, Centre for Quantum Computation and Communication Technology
 
@@ -272,17 +288,19 @@ Computer Science Skills
 <div class="row">
 <div class="four columns" >
 <ul>
-<li>optparse-applicative</li>
-<li>Icicle query language</li>
+<li>[optparse-applicative](https://github.com/pcapriotti/optparse-applicative)</li>
+<li>[Icicle query language](https://github.com/icicle-lang/icicle)</li>
 </ul>
 </div>
 <div class="four columns">
 <ul>
-<li>Grenade</li>
+<li>[Grenade](https://github.com/HuwCampbell/grenade)</li>
+<li>[Haskell Hedgehog](https://github.com/hedgehogqa/haskell-hedgehog) (contributor)</li>
 </div>
 <div class="four columns">
 <ul>
 <li>snappier</li>
+<li>[R Hedgehog](https://github.com/hedgehogqa/r-hedgehog) (contributor)</li>
 </div>
 </div>
 
