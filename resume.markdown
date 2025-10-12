@@ -67,7 +67,7 @@ Experience
 **Icicle Language and Platform**, Icicle Platform ( Continuing )
 
 Icicle is a novel, streaming query language with a distinctive modal type
-system for handling the single pass invariants of a streaming computation
+system for handling single pass invariants required for streaming computation;
 as well as predictable and explicit error handling.
 
 I've been working to bring Icicle up to commercial standards, discovering
