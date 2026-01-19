@@ -93,6 +93,14 @@ data science for our clients.
 With Simple Machines I have worked across a wide variety of projects
 and disciplines, including:
 
+- Real-Time Decision Engine.<br>
+  In a short-term contract I was brought on to deliver a Realtime Decision
+  Engine for one of Australia's largest industry groups. Working with a
+  mixture of data engineering technologies within Google Cloud, I was given
+  less than 6 weeks to deliver an end-to-end experimentation framework,
+  including onboarding data sources with DBT and airflow, service endpoints
+  with Google Cloud Run, and realtime ingestion and state management in
+  Google FireStore.<br>
 - Anaml Feature Engineering Platform.<br>
   I am the principal engineer for a feature engineering and analytics tool,
   designed to help businesses collaborate more productively when performing
