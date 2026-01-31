@@ -2,6 +2,8 @@
 title: Announcing optparse-applicative 0.14.0
 description: A new version of optparse-applicative
 tags: haskell
+date: 2017-06-09
+atUri: "at://did:plc:6e7msnu5o3mdboitzv7oxbxm/site.standard.document/3mdos5a6i7g2n"
 ---
 
 I'm very pleased to announce the next major version of

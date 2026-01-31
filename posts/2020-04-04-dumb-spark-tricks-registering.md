@@ -2,6 +2,8 @@
 title: Dumb Spark Tricks - Function Registration
 description: How to force Spark to register your non-UDF catalyst expressions
 tags: spark
+date: 2020-04-04
+atUri: "at://did:plc:6e7msnu5o3mdboitzv7oxbxm/site.standard.document/3mdos57c2zo2n"
 ---
 
 I've been working with Spark for a few years now, and have pushed it into realms where it was

@@ -2,6 +2,8 @@
 title: Oven Poached Chicken Drumsticks
 description: Recipe for delicious coconut poached chicken
 tags: recipe
+date: 2017-05-20
+atUri: "at://did:plc:6e7msnu5o3mdboitzv7oxbxm/site.standard.document/3mdos5ahqgb2g"
 ---
 
 My partner and I recently had our first child together - a

@@ -2,6 +2,8 @@
 title: Grenade
 description: An introduction to Grenade, deep learning in Haskell
 tags: haskell
+date: 2017-02-17
+atUri: "at://did:plc:6e7msnu5o3mdboitzv7oxbxm/site.standard.document/3mdos5bdidw2n"
 ---
 
 I recently gave a talk at FP-Syd on my neural network library [Grenade](https://github.com/HuwCampbell/grenade). In some

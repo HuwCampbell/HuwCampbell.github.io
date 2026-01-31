@@ -2,6 +2,8 @@
 title: Dumb Spark Tricks - Partitioning
 description: How to force Spark to not repartition in Streaming and Non-Streaming applications
 tags: spark
+date: 2020-03-24
+atUri: "at://did:plc:6e7msnu5o3mdboitzv7oxbxm/site.standard.document/3mdos57uqmf2j"
 ---
 
 I've been working with Spark for a few years now, and have pushed it into realms where it was not

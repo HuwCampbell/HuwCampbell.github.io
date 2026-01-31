@@ -3,6 +3,8 @@ title: Destructive Updates - a Stitch in Time
 date: 2025-02-01
 description: How the Tardis Monad and a Stitching Graph helps discover affine array usage, reducing run times by up to a half.
 author: Huw Campbell
+date: 2025-02-01
+atUri: "at://did:plc:6e7msnu5o3mdboitzv7oxbxm/site.standard.document/3mdos5vrv7g2n"
 ---
 
 <h5>

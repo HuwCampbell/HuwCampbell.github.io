@@ -2,6 +2,8 @@
 title: Optimised Row Columnar for Haskell
 description: A new library for reading and writing Optimised Row Columnar files in native Haskell
 tags: Haskell
+date: 2020-09-18
+atUri: "at://did:plc:6e7msnu5o3mdboitzv7oxbxm/site.standard.document/3mdos56pm552j"
 ---
 
 I are proud to announce a new [Apache ORC](https://github.com/HuwCampbell/orc-haskell) library for Haskell which I am releasing as open source under the Affero General Public License. This project was written as a component for the [Icicle](https://icicle-lang.github.io) query language; and this announcement is cross posted there.

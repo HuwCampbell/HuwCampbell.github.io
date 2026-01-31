@@ -2,6 +2,8 @@
 title: Maintaining Optparse-Applicative
 description: Recent additions to optparse-applicative
 tags: haskell
+date: 2017-02-28
+atUri: "at://did:plc:6e7msnu5o3mdboitzv7oxbxm/site.standard.document/3mdos5b2isf2m"
 ---
 
 I'm the current maintainer of
