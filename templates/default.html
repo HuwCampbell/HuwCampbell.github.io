@@ -34,7 +34,11 @@
   <!-- ATOM Feed
   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <link href="/atom.xml" type="application/atom+xml" rel="alternate" title="ATOM Feed" />
-
+$if(atUri)$
+  <!-- Standard Site Validation
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="site.standard.document" href="$atUri$">
+$endif$
 </head>
 <body>
 
