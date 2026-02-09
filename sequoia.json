@@ -5,6 +5,7 @@
   "publicationUri": "at://did:plc:6e7msnu5o3mdboitzv7oxbxm/site.standard.publication/3mcqtx44uokk2",
   "pdsUrl": "https://amanita.us-east.host.bsky.network",
   "frontmatter": {
+    "description": "description",
     "publishDate": "date"
   }
 }

@@ -304,14 +304,25 @@ Computer Science Skills
 <ul>
 <li>[Grenade](https://github.com/HuwCampbell/grenade)</li>
 <li>[Haskell Hedgehog](https://github.com/hedgehogqa/haskell-hedgehog) (contributor)</li>
+</ul>
 </div>
 <div class="four columns">
 <ul>
 <li>snappier</li>
 <li>[R Hedgehog](https://github.com/hedgehogqa/r-hedgehog) (contributor)</li>
+</ul>
 </div>
 </div>
 
+Professional Credentials
+------------------------
+
+<div class="row">
+<ul>
+<li>Google Professional Cloud Developer</li>
+<li>Confluent Certified Developer for Apache Kafka</li>
+</ul>
+</div>
 
 Interests
 ---------
@@ -327,10 +338,12 @@ Interests
 <ul>
 <li>Circus performance</li>
 <li>Singing</li>
+</ul>
 </div>
 <div class="four columns">
 <ul>
 <li>Type systems</li>
 <li>Animal conservation</li>
+</ul>
 </div>
 </div>
