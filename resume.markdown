@@ -61,6 +61,19 @@ Education
 - Non-academic roles:
     - President of the UNSW Physics Society (2005)
 
+
+Professional Credentials
+------------------------
+
+<div class="row">
+<ul>
+<li>Google Professional Cloud Developer</li>
+<li>Google Professional Data Engineer</li>
+<li>Confluent Certified Developer for Apache Kafka</li>
+</ul>
+</div>
+
+
 Experience
 ----------
 
@@ -312,16 +325,6 @@ Computer Science Skills
 <li>[R Hedgehog](https://github.com/hedgehogqa/r-hedgehog) (contributor)</li>
 </ul>
 </div>
-</div>
-
-Professional Credentials
-------------------------
-
-<div class="row">
-<ul>
-<li>Google Professional Cloud Developer</li>
-<li>Confluent Certified Developer for Apache Kafka</li>
-</ul>
 </div>
 
 Interests
